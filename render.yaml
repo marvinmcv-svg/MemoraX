@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: memorax-backend
+    env: node
+    region: oregon
+    plan: starter
+    buildCommand: npm install -g pnpm && pnpm install && pnpm build --filter=@memorax/backend
+    startCommand: NODE_ENV=production node apps/backend/dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: REDIS_URL
+        sync: false
+      - key: MINIMAX_API_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+
+  - type: web
+    name: memorax-web
+    env: node
+    region: oregon
+    plan: starter
+    buildCommand: npm install -g pnpm && pnpm install && pnpm build --filter=@memorax/web
+    startCommand: npx next start -p 3000
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_API_URL
+        value: https://memorax-backend.onrender.com
+      - key: NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY
+        sync: false

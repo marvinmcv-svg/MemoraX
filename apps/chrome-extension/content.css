@@ -1,0 +1,171 @@
+#memorax-widget {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 999999;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.memorax-toggle {
+  width: 56px;
+  height: 56px;
+  border-radius: 28px;
+  background: linear-gradient(135deg, #6366F1 0%, #818CF8 100%);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.memorax-toggle:hover {
+  transform: scale(1.05);
+  box-shadow: 0 6px 24px rgba(99, 102, 241, 0.5);
+}
+
+.memorax-logo {
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.memorax-popup {
+  position: absolute;
+  bottom: 70px;
+  right: 0;
+  width: 320px;
+  background: #12121A;
+  border: 1px solid #2A2A3A;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(10px);
+  transition: all 0.2s ease;
+}
+
+.memorax-popup.open {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.memorax-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px;
+  border-bottom: 1px solid #2A2A3A;
+  color: #F8FAFC;
+  font-weight: 600;
+}
+
+.memorax-logo-small {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: #6366F1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.memorax-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  color: #64748B;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.memorax-close:hover {
+  color: #F8FAFC;
+}
+
+.memorax-content {
+  padding: 16px;
+}
+
+#memorax-input {
+  width: 100%;
+  min-height: 100px;
+  background: #0A0A0F;
+  border: 1px solid #2A2A3A;
+  border-radius: 12px;
+  padding: 12px;
+  color: #F8FAFC;
+  font-size: 14px;
+  resize: none;
+  font-family: inherit;
+}
+
+#memorax-input:focus {
+  outline: none;
+  border-color: #6366F1;
+}
+
+#memorax-input::placeholder {
+  color: #64748B;
+}
+
+.memorax-actions {
+  margin-top: 12px;
+}
+
+.memorax-save {
+  width: 100%;
+  padding: 12px;
+  background: #6366F1;
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.memorax-save:hover {
+  background: #818CF8;
+}
+
+.memorax-save:disabled {
+  background: #2A2A3A;
+  cursor: not-allowed;
+}
+
+.memorax-notification {
+  position: fixed;
+  bottom: 90px;
+  right: 20px;
+  padding: 12px 20px;
+  background: #12121A;
+  border: 1px solid #2A2A3A;
+  border-radius: 10px;
+  color: #F8FAFC;
+  font-size: 14px;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.3s ease;
+}
+
+.memorax-notification.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.memorax-notification.success {
+  border-color: #10B981;
+}
+
+.memorax-notification.error {
+  border-color: #EF4444;
+}

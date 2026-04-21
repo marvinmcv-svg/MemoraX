@@ -1,0 +1,283 @@
+# MemoraX - AI Memory OS Specification
+
+## 1. Concept & Vision
+
+MemoraX is an AI-powered memory OS that captures everything—reminders, tasks, notes, voice memos, images—across all communication channels (WhatsApp, Telegram, Slack, SMS, email, native app). The AI brain extracts intent, entities, and context, stores them in a semantic knowledge graph, and proactively surfaces what matters through daily briefings, smart reminders, and serendipitous rediscovery.
+
+**Personality**: Calm, intelligent, unobtrusive. Like having a brilliant personal assistant who never forgets anything and always reminds you at the perfect moment.
+
+## 2. Design Language
+
+### Aesthetic Direction
+Inspired by Notion's clean minimalism meets Linear's dark-mode sophistication. Dark-first interface with subtle gradients, glass-morphism cards, and micro-animations that convey "thinking" AI activity.
+
+### Color Palette
+- **Background**: `#0A0A0F` (deep space black)
+- **Surface**: `#12121A` (elevated surface)
+- **Surface-hover**: `#1A1A24`
+- **Border**: `#2A2A3A`
+- **Primary**: `#6366F1` (indigo)
+- **Primary-glow**: `#818CF8`
+- **Secondary**: `#10B981` (emerald for success/AI activity)
+- **Accent**: `#F59E0B` (amber for reminders)
+- **Text-primary**: `#F8FAFC`
+- **Text-secondary**: `#94A3B8`
+- **Text-muted**: `#64748B`
+
+### Typography
+- **Headings**: Inter (weight 600-700)
+- **Body**: Inter (weight 400-500)
+- **Monospace**: JetBrains Mono (for code/IDs)
+
+### Spatial System
+- Base unit: 4px
+- Component spacing: 12px, 16px, 24px
+- Section spacing: 32px, 48px, 64px
+- Border radius: 8px (cards), 6px (buttons), 4px (inputs)
+
+### Motion Philosophy
+- **Transitions**: 150ms ease-out for micro-interactions
+- **Page transitions**: 200ms fade + slide
+- **Loading states**: Subtle pulse animations (skeleton loaders)
+- **AI processing**: Gentle gradient shifts to convey "thinking"
+
+## 3. Layout & Structure
+
+### Web Dashboard
+```
+┌─────────────────────────────────────────────────────────────┐
+│ [Sidebar]        │  [Main Content Area]                     │
+│                  │                                          │
+│ Logo             │  ┌─ Header ─────────────────────────┐  │
+│ ─────────────    │  │ Search (semantic)    [User] [Notif]│  │
+│ Quick Capture    │  └────────────────────────────────────┘  │
+│                  │                                          │
+│ Memories         │  ┌─ Content ─────────────────────────┐  │
+│ Reminders        │  │                                  │  │
+│ Spaces           │  │  Dynamic content based on        │  │
+│ Team             │  │  sidebar selection                │  │
+│ ─────────────    │  │                                  │  │
+│ Channels         │  │                                  │  │
+│ Settings         │  └────────────────────────────────────┘  │
+│                  │                                          │
+│ [AI Status]      │  ┌─ Activity Feed ───────────────────┐  │
+│                  │  │ Recent AI processing activity      │  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Mobile App
+- Bottom tab navigation: Home, Memories, Capture, Reminders, Profile
+- Swipe gestures for quick actions
+- Pull-to-refresh for activity updates
+
+## 4. Features & Interactions
+
+### Core Features
+
+#### 4.1 Multi-Channel Memory Capture
+- **WhatsApp**: Send messages/media to +1-XXX-XXX-XXXX
+- **Telegram**: DM @memorax_bot or use inline search
+- **Slack**: `/memorax` slash command or DM the app
+- **SMS**: Send to our Twilio number
+- **Email**: Send to capture@memorax.ai
+- **App**: Full-featured capture interface with voice input
+
+#### 4.2 AI Processing Pipeline (per message)
+1. **Intent Classification** (Claude 3.5 Haiku): reminder / note / task / event / serendipity / question
+2. **Entity Extraction** (Claude Sonnet + spaCy): people, dates, locations, topics, relationships
+3. **Voice Transcription** (Deepgram Nova-3): voice → structured text
+4. **Embedding** (OpenAI text-embedding-3-small): 1536-dim vector for semantic search
+5. **Knowledge Graph** (Neo4j): entity nodes + relationship edges
+
+#### 4.3 Daily AI Briefings
+- Personalized morning digest (7:00 AM user timezone default)
+- Includes: upcoming reminders, recent memories, serendipitous resurfacing
+- Generated by Claude Sonnet
+
+#### 4.4 Semantic Search
+- Natural language queries: "what did I discuss about the project launch?"
+- Filters: by channel, date range, content type, intent
+- Results ranked by cosine similarity + recency
+
+#### 4.5 Smart Reminders
+- Natural language scheduling: "remind me to call mom tomorrow at 2pm"
+- Recurring reminders via RRULE
+- Fallback delivery if primary channel unavailable
+
+#### 4.6 Team Workspaces
+- Shared memory spaces with role-based access
+- Collaborative capture and annotation
+- Team briefings
+
+### Interaction Details
+
+#### Memory Card
+- Hover: subtle elevation + border glow
+- Click: expand to full memory view
+- Swipe right: quick reminder
+- Swipe left: archive
+
+#### Quick Capture Input
+- Auto-focus on `/` keypress globally
+- Voice input button with waveform animation
+- Channel selector (where to send)
+- Submit: shimmer animation during AI processing
+
+#### Empty States
+- Memories: "Your memory palace is empty. Capture your first thought."
+- Reminders: "No upcoming reminders. Your future self will thank you."
+- Search: "No memories found. The AI is still indexing..."
+
+#### Error States
+- Network failure: "Connection lost. Memories are saved locally."
+- AI timeout: "AI thinking... (took longer than expected)"
+- Channel disconnect: "WhatsApp disconnected. Reconnect in Settings."
+
+## 5. Component Inventory
+
+### MemoryCard
+- States: default, hover, expanded, selected, archived
+- Shows: content preview, source channel icon, intent badge, timestamp
+- AI indicators: entity highlights, topic tags
+
+### ReminderItem
+- States: pending, sent, snoozed, cancelled
+- Shows: reminder text, time, recurrence badge, delivery channel
+- Actions: snooze (15m, 1h, 1d), edit, delete
+
+### ChannelBadge
+- Per-channel icons: WhatsApp (green), Telegram (blue), Slack (purple), SMS (gray), Email (red), App (indigo)
+- Connection status indicator (connected/disconnected)
+
+### AIProcessingIndicator
+- States: idle, classifying, extracting, embedding, complete
+- Animated gradient border during active processing
+
+### SearchBar
+- Semantic search with filters dropdown
+- Recent searches, suggested queries
+- Keyboard shortcut hint (`/`)
+
+### BriefingCard
+- Daily digest preview
+- Expandable sections
+- Quick actions (mark read, share)
+
+## 6. Technical Approach
+
+### Architecture Overview
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Cloudflare Workers                        │
+│                    (Hono.js API Gateway)                     │
+│  - Webhook ingestion (WhatsApp, Telegram, Slack, Twilio)    │
+│  - Signature verification                                     │
+│  - Message deduplication                                     │
+│  - Rate limiting (Upstash Redis)                            │
+└─────────────────┬───────────────────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────────────────────┐
+│                   Railway (Node.js Services)                 │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐  │
+│  │ Memory      │ │ Scheduler   │ │ Notification Dispatch   │  │
+│  │ Service     │ │ (BullMQ)    │ │                         │  │
+│  └─────────────┘ └─────────────┘ └─────────────────────────┘  │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────────────┐  │
+│  │ AI Brain    │ │ Knowledge   │ │ Serendipity Engine      │  │
+│  │ Pipeline    │ │ Graph       │ │                         │  │
+│  └─────────────┘ └─────────────┘ └─────────────────────────┘  │
+└─────────────────┬───────────────────────────────────────────┘
+                  │
+┌─────────────────▼───────────────────────────────────────────┐
+│                      Data Layer                              │
+│  Neon PostgreSQL    │  Upstash Redis  │  Neo4j Aura         │
+│  (pgvector)         │  (Rate limit)   │  (Knowledge graph)  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### API Design
+
+#### REST Endpoints
+```
+POST   /api/v1/memories              # Create memory
+GET    /api/v1/memories              # List memories (paginated)
+GET    /api/v1/memories/:id          # Get single memory
+PUT    /api/v1/memories/:id          # Update memory
+DELETE /api/v1/memories/:id          # Delete memory
+POST   /api/v1/memories/search       # Semantic search
+
+POST   /api/v1/reminders             # Create reminder
+GET    /api/v1/reminders             # List reminders
+PUT    /api/v1/reminders/:id         # Update reminder
+DELETE /api/v1/reminders/:id         # Delete reminder
+
+POST   /api/v1/briefings/generate    # Trigger briefing generation
+GET    /api/v1/briefings/latest      # Get latest briefing
+
+GET    /api/v1/workspaces            # List workspaces
+POST   /api/v1/workspaces            # Create workspace
+GET    /api/v1/workspaces/:id       # Get workspace details
+
+GET    /api/v1/channels              # List connected channels
+POST   /api/v1/channels/connect      # Connect new channel
+DELETE /api/v1/channels/:id          # Disconnect channel
+
+POST   /api/v1/ai/classify           # Classify intent
+POST   /api/v1/ai/extract            # Extract entities
+```
+
+#### Webhook Endpoints
+```
+POST   /webhooks/whatsapp            # Meta WhatsApp webhooks
+POST   /webhooks/telegram            # Telegram bot updates
+POST   /webhooks/slack                # Slack events
+POST   /webhooks/twilio               # Twilio SMS webhooks
+POST   /webhooks/email                # Postmark inbound email
+```
+
+### Data Model
+See DATABASE SCHEMA section in spec.
+
+### Authentication
+- Clerk for web/mobile auth
+- Channel-specific authentication (WhatsApp phone number linking, Telegram bot tokens, etc.)
+
+### Billing
+- Free tier: 100 memories/month, 10 reminders/day
+- Pro tier: Unlimited memories, reminders, all channels
+- Team tier: Shared workspaces, admin controls
+- Stripe integration with usage-based metering
+- No credit card required for free trial (honest billing)
+
+## 7. Implementation Phases
+
+### Phase 1: Core Infrastructure
+- [x] Project structure setup
+- [x] Database schema
+- [x] API gateway (Hono.js)
+- [x] Authentication (Clerk)
+
+### Phase 2: Messaging Channels
+- [ ] WhatsApp integration
+- [ ] Telegram integration
+- [ ] Slack integration
+- [ ] SMS (Twilio)
+- [ ] Email (Postmark)
+
+### Phase 3: AI Pipeline
+- [ ] Intent classifier
+- [ ] Entity extractor
+- [ ] Voice transcription
+- [ ] Embedding service
+- [ ] Briefing generator
+
+### Phase 4: Frontend
+- [ ] Next.js dashboard
+- [ ] React Native app
+- [ ] Chrome extension
+
+### Phase 5: Advanced Features
+- [ ] Knowledge graph service
+- [ ] Serendipity engine
+- [ ] Team workspaces
+- [ ] Public API
