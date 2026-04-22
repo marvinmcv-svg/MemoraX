@@ -1,0 +1,25 @@
+name: Deploy to Railway
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Railway
+        run: npm install -g @railway/cli
+
+      - name: Railway Login
+        run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Deploy
+        run: |
+          railway up --service ${{ vars.RAILWAY_SERVICE_ID }}
+          railway variable set MINIMAX_API_KEY=${{ secrets.MINIMAX_API_KEY }}
+
+      - name: Health Check
+        run: sleep 30 && curl -f https://memorax-backend.up.railway.app/health || exit 1
