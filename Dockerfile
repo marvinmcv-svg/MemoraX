@@ -9,7 +9,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY apps/backend /app/apps/backend
 WORKDIR /app/apps/backend
-RUN pnpm build
+RUN node_modules/.bin/tsc
 
 FROM node:20-alpine AS runner
 WORKDIR /app
