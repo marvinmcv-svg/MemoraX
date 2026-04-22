@@ -2,7 +2,7 @@ FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json pnpm-workspace.yaml ./
 COPY apps/backend/package.json apps/backend/
-RUN npm install -g pnpm && pnpm install --frozen-lockfile
+RUN npm install -g pnpm && pnpm install
 
 FROM node:20-alpine AS builder
 WORKDIR /app
