@@ -14,6 +14,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=builder /app/apps/backend/dist ./dist
 COPY --from=builder /app/apps/backend/package.json ./
-COPY --from=builder /app/node_modules ./node_modules
+WORKDIR /app
+RUN npm install --omit=dev
 EXPOSE 3001
 CMD ["node", "dist/index.js"]
