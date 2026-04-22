@@ -1,13 +1,11 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package.json pnpm-workspace.yaml ./
-COPY tsconfig.json ./
 COPY apps/backend/package.json apps/backend/
-COPY apps/backend/tsconfig.json apps/backend/
 RUN npm install -g pnpm && pnpm install
 COPY apps/backend /app/apps/backend
 WORKDIR /app/apps/backend
-RUN npx tsc
+RUN npm install esbuild && node node_modules/esbuild/bin/esbuild src/index.ts --platform=node --bundle --outfile=dist/index.js --format=esm --packages=external
 
 FROM node:20-alpine AS runner
 WORKDIR /app
