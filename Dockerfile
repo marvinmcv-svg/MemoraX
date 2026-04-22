@@ -1,7 +1,9 @@
 FROM node:20-alpine AS builder
 WORKDIR /app
 COPY package.json pnpm-workspace.yaml ./
+COPY tsconfig.json ./
 COPY apps/backend/package.json apps/backend/
+COPY apps/backend/tsconfig.json apps/backend/
 RUN npm install -g pnpm && pnpm install
 COPY apps/backend /app/apps/backend
 WORKDIR /app/apps/backend
