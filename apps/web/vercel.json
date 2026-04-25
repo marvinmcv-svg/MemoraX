@@ -1,6 +1,7 @@
 {
   "env": {
-    "NEXT_PUBLIC_API_URL": "https://memorax-backend.up.railway.app"
+    "NEXT_PUBLIC_API_URL": "https://memorax-backend.up.railway.app",
+    "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_test_Y29taWMtY3Jvdy05MS5jbGVyay5hY2NvdW50cy5kZXYk"
   },
   "buildCommand": "npm run build",
   "outputDirectory": ".next"

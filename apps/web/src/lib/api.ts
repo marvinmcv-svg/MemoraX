@@ -1,4 +1,5 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://memorax-backend.up.railway.app';
+const CLERK_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_Y29taWMtY3Jvdy05MS5jbGVyay5hY2NvdW50cy5kZXYk';
 
 interface ApiOptions {
   method?: string;
