@@ -1,3 +1,7 @@
+'use client';
+
+import { SignUp } from '@clerk/nextjs';
+
 export default function SignUpPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
@@ -11,17 +15,7 @@ export default function SignUpPage() {
         </div>
 
         <div className="p-8 rounded-2xl border border-border bg-surface">
-          <p className="text-center text-text-muted">
-            Sign up with Clerk authentication
-          </p>
-          <div className="mt-6 flex justify-center">
-            <a
-              href="/sign-up"
-              className="px-6 py-3 bg-primary hover:bg-primary-glow text-white rounded-xl font-medium transition-colors"
-            >
-              Continue with Clerk
-            </a>
-          </div>
+          <SignUp routing="path" path="/sign-up" />
         </div>
       </div>
     </div>
