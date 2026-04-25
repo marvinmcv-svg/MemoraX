@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "@clerk/nextjs": "^5.0.0",
-    "@memorax/shared": "workspace:*",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.0",
     "framer-motion": "^11.18.2",

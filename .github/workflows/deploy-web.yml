@@ -1,0 +1,24 @@
+name: Deploy Web to Vercel
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+
+jobs:
+  deploy-web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Set API URL
+        run: echo "NEXT_PUBLIC_API_URL=${{ vars.RAILWAY_BACKEND_URL }}" >> apps/web/.env.production.local
+
+      - name: Deploy to Vercel
+        run: |
+          cd apps/web
+          vercel --prod --yes --token ${{ secrets.VERCEL_TOKEN }}
