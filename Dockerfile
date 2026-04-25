@@ -5,7 +5,7 @@ COPY apps/backend/package.json apps/backend/
 RUN npm install -g pnpm && pnpm install
 COPY apps/backend /app/apps/backend
 WORKDIR /app/apps/backend
-RUN npm install esbuild && node node_modules/esbuild/bin/esbuild src/index.ts --platform=node --bundle --outfile=dist/index.js --format=esm --packages=external
+RUN pnpm build
 
 FROM node:20-alpine AS runner
 WORKDIR /app
