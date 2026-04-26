@@ -2,7 +2,7 @@
 
 import { ReactNode, useState } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Brain,
   Clock,
@@ -21,6 +21,7 @@ import { clsx } from 'clsx';
 
 const sidebarLinks = [
   { href: '/dashboard', icon: Brain, label: 'Home' },
+  { href: '/dashboard/search', icon: Search, label: 'Search' },
   { href: '/dashboard/memories', icon: Hash, label: 'Memories' },
   { href: '/dashboard/reminders', icon: Clock, label: 'Reminders' },
   { href: '/dashboard/spaces', icon: FolderOpen, label: 'Spaces' },
@@ -31,7 +32,15 @@ const sidebarLinks = [
 
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === '/' && pathname !== '/dashboard/search') {
+      e.preventDefault();
+      router.push('/dashboard/search');
+    }
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -112,7 +121,10 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
                 <input
                   type="text"
                   placeholder="Search memories... (Press /)"
-                  className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-xl text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors"
+                  onKeyDown={handleSearchKeyDown}
+                  onClick={() => router.push('/dashboard/search')}
+                  readOnly
+                  className="w-full pl-10 pr-4 py-2 bg-background border border-border rounded-xl text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary transition-colors cursor-pointer"
                 />
               </div>
             </div>

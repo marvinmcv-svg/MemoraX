@@ -1,9 +1,15 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { EntityType, MemoryEntity } from '@memorax/shared';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+let anthropicClient: Anthropic | null = null;
+
+function getAnthropicClient(): Anthropic | null {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  if (!anthropicClient) {
+    anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+  return anthropicClient;
+}
 
 const ENTITY_EXTRACTOR_PROMPT = `You are an entity extractor for MemoraX, an AI memory OS. Extract entities from the user's message.
 
@@ -41,7 +47,12 @@ export interface EntityExtractionResult {
 }
 
 export async function extractEntities(content: string): Promise<EntityExtractionResult> {
-  const response = await anthropic.messages.create({
+  const client = getAnthropicClient();
+  if (!client) {
+    return { entities: [], relationships: [] };
+  }
+
+  const response = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 500,
     messages: [

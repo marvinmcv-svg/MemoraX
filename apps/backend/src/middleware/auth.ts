@@ -1,7 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import Clerk from '@clerk/clerk-sdk-node';
-
-const clerk = Clerk({ secretKey: process.env.CLERK_SECRET_KEY });
+import { verifyToken } from '@clerk/clerk-sdk-node';
 
 export async function authMiddleware() {
   return async (req: Request, res: Response, next: NextFunction) => {
@@ -10,14 +8,12 @@ export async function authMiddleware() {
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.slice(7);
       try {
-        const session = await clerk.verifySession(token, req.headers['clerk-session-id'] as string);
-        (req as any).userId = session.userId;
+        const payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY });
+        (req as any).userId = payload.sub;
       } catch (err) {
-        // Use mock user for demo
         (req as any).userId = 'demo-user';
       }
     } else {
-      // Demo mode
       (req as any).userId = 'demo-user';
     }
 

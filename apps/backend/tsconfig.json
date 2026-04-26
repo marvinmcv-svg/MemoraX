@@ -5,13 +5,17 @@
     "module": "commonjs",
     "moduleResolution": "node",
     "outDir": "./dist",
-    "rootDir": "./src",
     "strict": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "noEmit": false,
     "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": "../..",
+    "paths": {
+      "@memorax/ai": ["packages/ai/src"],
+      "@memorax/shared": ["packages/shared/src"]
+    }
   },
   "include": ["src/**/*"]
 }

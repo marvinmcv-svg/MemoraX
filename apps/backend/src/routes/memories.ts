@@ -1,6 +1,7 @@
 import { Router, Request, Response, Router as ExpressRouter } from 'express';
 import { memoryStore } from '../lib/store';
 import { serendipityEngine } from '../lib/serendipity';
+import { aiPipeline } from '../services/ai-pipeline';
 import { v4 as uuid } from 'uuid';
 import type { ContentType, IntentType, ChannelType } from '../types';
 
@@ -26,6 +27,16 @@ memoryRoutes.post('/', async (req: Request, res: Response) => {
       embedding: null,
     });
 
+    const aiResult = await aiPipeline.process({
+      content,
+      contentType: (contentType || 'text') as ContentType,
+      memoryId: memory.id,
+    });
+
+    memory.intent = aiResult.intent;
+    memory.embedding = aiResult.embedding.length > 0 ? aiResult.embedding : null;
+    memory.updatedAt = new Date();
+
     serendipityEngine.recordMemory({
       id: memory.id,
       content: memory.content,
@@ -34,7 +45,11 @@ memoryRoutes.post('/', async (req: Request, res: Response) => {
       createdAt: memory.createdAt.toISOString(),
     });
 
-    return res.status(201).json(memory);
+    return res.status(201).json({
+      memory,
+      aiStages: aiResult.stages,
+      processingTime: aiResult.processingTime,
+    });
   } catch (error) {
     console.error('Error creating memory:', error);
     return res.status(500).json({ error: 'Failed to create memory' });

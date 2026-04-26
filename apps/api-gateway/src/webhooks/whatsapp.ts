@@ -1,6 +1,8 @@
 import { Context } from 'hono';
 import type { AppContext } from '../types';
 
+const seenMessages = new Set<string>();
+
 export async function verifyWhatsAppSignature(c: Context<AppContext>, next: () => Promise<void>) {
   const WHATSAPP_VERIFY_TOKEN = c.env.WHATSAPP_VERIFY_TOKEN || '';
   const WHATSAPP_APP_SECRET = c.env.WHATSAPP_APP_SECRET || '';
@@ -50,32 +52,60 @@ export async function handleWhatsAppWebhook(c: Context<AppContext>) {
     return c.json({ error: 'Not a WhatsApp webhook' }, 400);
   }
 
+  let processedCount = 0;
+
   for (const entry of body.entry || []) {
     for (const change of entry.changes || []) {
       const value = change.value;
       if (value.messages) {
         for (const message of value.messages) {
+          const messageId = message.id;
           const phoneNumberId = value.metadata?.phone_number_id;
           const from = message.from;
           const content = message.text?.body || '';
 
+          if (seenMessages.has(messageId)) {
+            console.log(`Duplicate message ${messageId}, skipping`);
+            continue;
+          }
+          seenMessages.add(messageId);
+
+          if (seenMessages.size > 10000) {
+            seenMessages.clear();
+          }
+
           console.log(`WhatsApp message from ${from}: ${content}`);
 
-          await fetch(`${c.env.BACKEND_URL}/api/capture`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              channel: 'whatsapp',
-              channelUserId: from,
-              phoneNumberId,
-              content,
-              contentType: 'text',
-            }),
-          });
+          try {
+            const captureRes = await fetch(`${c.env.BACKEND_URL}/api/v1/capture`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                channel: 'whatsapp',
+                channelUserId: from,
+                phoneNumberId,
+                content,
+                contentType: 'text',
+                metadata: {
+                  messageId,
+                  phoneNumberId,
+                  timestamp: message.timestamp,
+                },
+              }),
+            });
+
+            if (!captureRes.ok) {
+              console.error(`Capture failed for message ${messageId}:`, await captureRes.text());
+            } else {
+              processedCount++;
+            }
+          } catch (err) {
+            console.error(`Error capturing WhatsApp message ${messageId}:`, err);
+          }
         }
       }
     }
   }
 
-  return c.json({ status: 'ok' });
+  return c.json({ status: 'ok', processed: processedCount });
 }

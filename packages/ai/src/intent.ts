@@ -1,9 +1,15 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { IntentType } from '@memorax/shared';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+let anthropicClient: Anthropic | null = null;
+
+function getAnthropicClient(): Anthropic | null {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  if (!anthropicClient) {
+    anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+  return anthropicClient;
+}
 
 const INTENT_CLASSIFIER_PROMPT = `You are an intent classifier for MemoraX, an AI memory OS. Classify the user's message into one of these intent categories:
 
@@ -35,7 +41,12 @@ export interface IntentResult {
 }
 
 export async function classifyIntent(content: string): Promise<IntentResult> {
-  const response = await anthropic.messages.create({
+  const client = getAnthropicClient();
+  if (!client) {
+    return { intent: 'unknown', confidence: 0, reasoning: 'Anthropic API key not configured' };
+  }
+
+  const response = await client.messages.create({
     model: 'claude-3-5-haiku-20241022',
     max_tokens: 300,
     messages: [

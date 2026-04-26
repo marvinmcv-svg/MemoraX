@@ -2,11 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { Brain, Clock, TrendingUp, Sparkles, Plus, Mic, Image, Send } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Brain, Clock, TrendingUp, Sparkles, ChevronRight, ArrowRight, Hash, Plus } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api, type Memory } from '@/lib/api';
-
-export const dynamic = 'force-dynamic';
+import { QuickCapture } from '@/components/features/QuickCapture';
 
 const intents = {
   reminder: { color: '#F59E0B', label: 'Reminder' },
@@ -15,6 +14,15 @@ const intents = {
   event: { color: '#EC4899', label: 'Event' },
   serendipity: { color: '#8B5CF6', label: 'Serendipity' },
   unknown: { color: '#64748B', label: 'Memory' },
+};
+
+const channelIcons: Record<string, string> = {
+  whatsapp: '💬',
+  telegram: '✈️',
+  slack: '⚡',
+  sms: '📱',
+  email: '📧',
+  app: '🌐',
 };
 
 function formatRelativeTime(dateStr: string): string {
@@ -35,9 +43,6 @@ function formatRelativeTime(dateStr: string): string {
 export default function DashboardPage() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
-  const [quickCapture, setQuickCapture] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [isRecording, setIsRecording] = useState(false);
 
   const fetchMemories = useCallback(async () => {
     try {
@@ -54,127 +59,57 @@ export default function DashboardPage() {
     fetchMemories();
   }, [fetchMemories]);
 
-  const handleSubmitMemory = useCallback(async () => {
-    if (!quickCapture.trim() || submitting) return;
-
-    setSubmitting(true);
-    try {
-      await api.memories.create({ content: quickCapture });
-      setQuickCapture('');
-      fetchMemories();
-    } catch (error) {
-      console.error('Failed to create memory:', error);
-    } finally {
-      setSubmitting(false);
-    }
-  }, [quickCapture, submitting, fetchMemories]);
-
   const stats = [
-    { label: 'Total Memories', value: String(memories.length), change: 'this session', icon: Brain },
-    { label: 'Reminders Today', value: '0', change: 'upcoming', icon: Clock },
-    { label: 'This Week', value: String(memories.length), change: '+0', icon: TrendingUp },
+    { label: 'Total Memories', value: String(memories.length), icon: Brain },
+    { label: 'This Week', value: String(memories.length), icon: TrendingUp },
+    { label: 'Quick Capture', value: 'Active', icon: Sparkles },
   ];
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-text-primary mb-2">Welcome back</h1>
-        <p className="text-text-secondary">Here&apos;s what&apos;s happening with your memories today.</p>
-      </div>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <h1 className="text-4xl font-bold text-text-primary mb-2">
+          Welcome back
+          <span className="text-gradient">.</span>
+        </h1>
+        <p className="text-text-secondary text-lg">Here&apos;s what&apos;s happening with your memories today.</p>
+      </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        {stats.map((stat) => (
-          <div
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+        {stats.map((stat, i) => (
+          <motion.div
             key={stat.label}
-            className="p-6 rounded-2xl border border-border bg-surface"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="p-6 rounded-2xl border border-border bg-surface hover:border-primary/30 transition-all"
           >
             <div className="flex items-center justify-between mb-4">
-              <stat.icon className="w-6 h-6 text-primary" />
-              <span className="text-xs font-medium text-secondary bg-secondary/10 px-2 py-1 rounded-full">
-                {stat.change}
-              </span>
+              <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center">
+                <stat.icon className="w-6 h-6 text-primary" />
+              </div>
             </div>
             <p className="text-3xl font-bold text-text-primary mb-1">{stat.value}</p>
             <p className="text-sm text-text-muted">{stat.label}</p>
-          </div>
+          </motion.div>
         ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         <div className="lg:col-span-2">
-          <div className="p-6 rounded-2xl border border-border bg-surface">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-                <Plus className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-text-primary">Quick Capture</h2>
-                <p className="text-sm text-text-muted">Add a new memory instantly</p>
-              </div>
-            </div>
-
-            <div className="relative">
-              <textarea
-                value={quickCapture}
-                onChange={(e) => setQuickCapture(e.target.value)}
-                placeholder="What&apos;s on your mind? Remind me to..., Note: ..., Remember that..."
-                className="w-full h-32 p-4 bg-background border border-border rounded-xl text-text-primary placeholder:text-text-muted resize-none focus:outline-none focus:border-primary transition-colors"
-              />
-              <div className="absolute bottom-4 right-4 flex items-center gap-2">
-                <button
-                  onClick={() => setIsRecording(!isRecording)}
-                  className={`p-2 rounded-lg transition-colors ${
-                    isRecording
-                      ? 'bg-red-500 text-white animate-pulse'
-                      : 'bg-surface-hover text-text-secondary hover:text-text-primary'
-                  }`}
-                >
-                  <Mic className="w-5 h-5" />
-                </button>
-                <button className="p-2 rounded-lg bg-surface-hover text-text-secondary hover:text-text-primary transition-colors">
-                  <Image className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={handleSubmitMemory}
-                  disabled={submitting || !quickCapture.trim()}
-                  className="p-2 rounded-lg bg-primary text-white hover:bg-primary-glow transition-colors disabled:opacity-50"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {isRecording && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="mt-4 p-4 bg-background rounded-xl border border-border"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex gap-1">
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <motion.div
-                        key={i}
-                        animate={{
-                          scaleY: [0.5, 1, 0.5],
-                        }}
-                        transition={{
-                          duration: 0.5,
-                          repeat: Infinity,
-                          delay: i * 0.1,
-                        }}
-                        className="w-1 h-8 bg-primary rounded-full"
-                      />
-                    ))}
-                  </div>
-                  <span className="text-text-secondary">Recording... Tap mic to stop</span>
-                </div>
-              </motion.div>
-            )}
-          </div>
+          <QuickCapture onSuccess={fetchMemories} />
         </div>
 
-        <div className="p-6 rounded-2xl border border-border bg-surface">
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ delay: 0.2 }}
+          className="p-6 rounded-2xl border border-border bg-surface"
+        >
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center">
               <Sparkles className="w-5 h-5 text-secondary" />
@@ -194,61 +129,97 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            <button className="w-full py-2 text-sm text-primary hover:text-primary-glow transition-colors text-left">
-              View full briefing →
+            <div className="p-4 bg-background rounded-xl border border-border">
+              <div className="flex items-center gap-2 text-sm text-text-secondary mb-2">
+                <Brain className="w-4 h-4 text-primary" />
+                <span>Recent activity</span>
+              </div>
+              {memories.length > 0 ? (
+                <p className="text-text-primary text-sm">
+                  Last memory: &quot;{memories[0].content.slice(0, 50)}...&quot;
+                </p>
+              ) : (
+                <p className="text-text-muted text-sm">No memories yet</p>
+              )}
+            </div>
+
+            <button className="w-full py-3 bg-primary/10 text-primary rounded-xl font-medium hover:bg-primary/20 transition-colors flex items-center justify-center gap-2">
+              <span>View full briefing</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-semibold text-text-primary">Recent Memories</h2>
-          <Link href="/dashboard/memories" className="text-sm text-primary hover:text-primary-glow">
-            View all →
+          <h2 className="text-xl font-semibold text-text-primary flex items-center gap-2">
+            <Hash className="w-5 h-5 text-primary" />
+            Recent Memories
+          </h2>
+          <Link
+            href="/dashboard/memories"
+            className="text-sm text-primary hover:text-primary-glow flex items-center gap-1 transition-colors"
+          >
+            View all
+            <ChevronRight className="w-4 h-4" />
           </Link>
         </div>
 
         {loading ? (
-          <div className="space-y-4">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="p-4 rounded-xl border border-border bg-surface animate-pulse">
-                <div className="h-4 bg-surface-hover rounded w-1/4 mb-3" />
-                <div className="h-3 bg-surface-hover rounded w-3/4" />
-              </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map(i => (
+              <div key={i} className="h-32 bg-surface rounded-2xl animate-pulse" />
             ))}
           </div>
         ) : memories.length === 0 ? (
-          <div className="p-8 rounded-xl border border-border bg-surface text-center">
-            <p className="text-text-secondary">No memories yet. Capture your first thought above!</p>
-          </div>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="p-8 rounded-2xl border border-border bg-surface text-center"
+          >
+            <Brain className="w-12 h-12 text-text-muted mx-auto mb-3" />
+            <p className="text-text-secondary">Your memory palace is empty.</p>
+            <p className="text-text-muted text-sm mt-1">Capture your first thought using Quick Capture above!</p>
+          </motion.div>
         ) : (
-          <div className="space-y-4">
-            {memories.map((memory) => (
-              <div
-                key={memory.id}
-                className="p-4 rounded-xl border border-border bg-surface hover:border-primary/50 transition-colors"
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="px-2 py-1 text-xs font-medium rounded-full"
-                      style={{
-                        backgroundColor: `${intents[memory.intent as keyof typeof intents]?.color || '#64748B'}20`,
-                        color: intents[memory.intent as keyof typeof intents]?.color || '#64748B',
-                      }}
-                    >
-                      {intents[memory.intent as keyof typeof intents]?.label || 'Memory'}
-                    </span>
-                    <span className="text-xs text-text-muted">
-                      {memory.sourceChannel || 'app'}
-                    </span>
-                  </div>
-                  <span className="text-xs text-text-muted">{formatRelativeTime(memory.createdAt)}</span>
-                </div>
-                <p className="text-text-primary leading-relaxed">{memory.content}</p>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AnimatePresence mode="popLayout">
+              {memories.map((memory, i) => {
+                const intent = intents[memory.intent as keyof typeof intents] || intents.unknown;
+                return (
+                  <motion.div
+                    key={memory.id}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.95 }}
+                    transition={{ delay: i * 0.05 }}
+                    className="p-5 rounded-2xl border border-border bg-surface hover:border-primary/30 transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="px-2 py-1 text-xs font-medium rounded-full"
+                          style={{
+                            backgroundColor: `${intent.color}20`,
+                            color: intent.color,
+                          }}
+                        >
+                          {intent.label}
+                        </span>
+                        <span className="text-xs text-text-muted">
+                          {channelIcons[memory.sourceChannel || 'app']} {memory.sourceChannel || 'app'}
+                        </span>
+                      </div>
+                      <span className="text-xs text-text-muted">{formatRelativeTime(memory.createdAt)}</span>
+                    </div>
+                    <p className="text-text-primary leading-relaxed line-clamp-2 group-hover:line-clamp-none transition-all">
+                      {memory.content}
+                    </p>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
           </div>
         )}
       </div>

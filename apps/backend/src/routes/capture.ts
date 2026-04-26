@@ -1,6 +1,7 @@
 import { Router, Request, Response, Router as ExpressRouter } from 'express';
 import { memoryStore } from '../lib/store';
 import { knowledgeGraph } from '../lib/knowledge-graph';
+import { aiPipeline } from '../services/ai-pipeline';
 import { v4 as uuid } from 'uuid';
 import type { ContentType, IntentType, ChannelType } from '../types';
 
@@ -16,36 +17,38 @@ captureRoutes.post('/', async (req: Request, res: Response) => {
 
     const userId = `channel-${channel}-${channelUserId}`;
 
-    const lower = content.toLowerCase();
-    let intent: IntentType = 'unknown';
-    if (lower.includes('remind') || lower.includes('remember')) {
-      intent = 'reminder';
-    } else if (lower.includes('?')) {
-      intent = 'question';
-    }
-
     const memory = memoryStore.create({
       userId,
       content,
       contentType: (contentType || 'text') as ContentType,
-      intent,
+      intent: 'unknown',
       sourceChannel: channel as ChannelType,
       mediaUrl: mediaUrl || null,
       metadata: metadata || { capturedVia: channel },
       embedding: null,
     });
 
-    const dateRegex = /\b(\d{1,2}\/\d{1,2}\/\d{2,4}|\d{4}-\d{2}-\d{2}|(?:today|tomorrow|yesterday|next week|monday|tuesday|wednesday|thursday|friday|saturday|sunday))\b/gi;
-    const dates = content.match(dateRegex);
-    if (dates) {
-      const entities = dates.map((d: string) => ({ type: 'DATE', value: d, confidence: 0.9 }));
-      knowledgeGraph.addMemoryToGraph(memory.id, entities);
+    const aiResult = await aiPipeline.process({
+      content,
+      contentType: (contentType || 'text') as ContentType,
+      memoryId: memory.id,
+    });
+
+    memory.intent = aiResult.intent;
+    memory.embedding = aiResult.embedding.length > 0 ? aiResult.embedding : null;
+    memory.updatedAt = new Date();
+
+    if (aiResult.entities.length > 0) {
+      knowledgeGraph.addMemoryToGraph(memory.id, aiResult.entities);
     }
 
     return res.status(201).json({
       success: true,
       memory,
-      intent,
+      intent: aiResult.intent,
+      entities: aiResult.entities,
+      processingTime: aiResult.processingTime,
+      aiStages: aiResult.stages,
     });
   } catch (error) {
     console.error('Error capturing message:', error);

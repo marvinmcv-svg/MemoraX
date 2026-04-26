@@ -1,106 +1,96 @@
 'use client';
 
-import { useState } from 'react';
-import { User, Bell, Shield, Palette, Database, Key, ChevronRight } from 'lucide-react';
+import { Settings, User, Bell, Shield, Palette, Database, LogOut, ChevronRight } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const settingsSections = [
   {
-    id: 'account',
     title: 'Account',
-    icon: User,
-    description: 'Manage your account settings',
+    items: [
+      { icon: User, label: 'Profile', desc: 'Manage your name, email, and photo' },
+      { icon: Bell, label: 'Notifications', desc: 'Configure reminder delivery' },
+    ],
   },
   {
-    id: 'notifications',
-    title: 'Notifications',
-    icon: Bell,
-    description: 'Configure reminder notifications',
+    title: 'Preferences',
+    items: [
+      { icon: Palette, label: 'Appearance', desc: 'Theme and display options' },
+      { icon: Database, label: 'Data & Storage', desc: 'Export memories, manage storage' },
+    ],
   },
   {
-    id: 'privacy',
-    title: 'Privacy & Security',
-    icon: Shield,
-    description: 'Control your data and privacy',
-  },
-  {
-    id: 'appearance',
-    title: 'Appearance',
-    icon: Palette,
-    description: 'Customize the look and feel',
-  },
-  {
-    id: 'data',
-    title: 'Data & Storage',
-    icon: Database,
-    description: 'Manage your data and storage',
-  },
-  {
-    id: 'api',
-    title: 'API Keys',
-    icon: Key,
-    description: 'Manage your API keys',
+    title: 'Security',
+    items: [
+      { icon: Shield, label: 'Privacy', desc: 'Control your data and sharing' },
+    ],
   },
 ];
 
 export default function SettingsPage() {
-  const [activeSection, setActiveSection] = useState<string | null>(null);
-
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text-primary">Settings</h1>
-        <p className="text-text-secondary mt-1">Configure your MemoraX experience</p>
-      </div>
+    <div className="p-6 max-w-4xl mx-auto">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <h1 className="text-3xl font-bold text-text-primary mb-2 flex items-center gap-3">
+          <Settings className="w-8 h-8 text-primary" />
+          Settings
+        </h1>
+        <p className="text-text-secondary">Manage your account and preferences</p>
+      </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-1">
-          <div className="bg-surface rounded-xl border border-border overflow-hidden">
-            {settingsSections.map((section, index) => {
-              const Icon = section.icon;
-              const isActive = activeSection === section.id;
-              return (
+      <div className="space-y-6">
+        {settingsSections.map((section, i) => (
+          <motion.div
+            key={section.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="p-6 rounded-2xl border border-border bg-surface"
+          >
+            <h2 className="text-sm font-medium text-text-muted mb-4 uppercase tracking-wider">{section.title}</h2>
+            <div className="space-y-2">
+              {section.items.map((item) => (
                 <button
-                  key={section.id}
-                  onClick={() => setActiveSection(isActive ? null : section.id)}
-                  className={`w-full p-4 flex items-center gap-3 hover:bg-surface-hover transition-colors ${
-                    index !== settingsSections.length - 1 ? 'border-b border-border' : ''
-                  } ${isActive ? 'bg-primary/5' : ''}`}
+                  key={item.label}
+                  className="w-full flex items-center justify-between p-4 bg-background rounded-xl hover:bg-surface-hover transition-colors group"
                 >
-                  <Icon className="w-5 h-5 text-text-muted" />
-                  <div className="flex-1 text-left">
-                    <p className="font-medium text-text-primary">{section.title}</p>
-                    <p className="text-xs text-text-muted">{section.description}</p>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                      <item.icon className="w-5 h-5 text-primary" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-text-primary font-medium">{item.label}</p>
+                      <p className="text-sm text-text-muted">{item.desc}</p>
+                    </div>
                   </div>
-                  <ChevronRight className={`w-4 h-4 text-text-muted transition-transform ${isActive ? 'rotate-90' : ''}`} />
+                  <ChevronRight className="w-5 h-5 text-text-muted group-hover:text-primary transition-colors" />
                 </button>
-              );
-            })}
-          </div>
-        </div>
+              ))}
+            </div>
+          </motion.div>
+        ))}
 
-        <div className="lg:col-span-2">
-          <div className="bg-surface rounded-xl border border-border p-6">
-            {activeSection === null ? (
-              <div className="text-center py-12">
-                <p className="text-text-secondary">Select a setting to configure</p>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          className="p-6 rounded-2xl border border-border bg-surface"
+        >
+          <button className="w-full flex items-center justify-between p-4 bg-red-500/10 rounded-xl hover:bg-red-500/20 transition-colors group">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
+                <LogOut className="w-5 h-5 text-red-500" />
               </div>
-            ) : (
-              <div>
-                <h2 className="text-lg font-semibold text-text-primary mb-4">
-                  {settingsSections.find(s => s.id === activeSection)?.title}
-                </h2>
-                <p className="text-text-muted">
-                  {activeSection === 'account' && 'Manage your account details, email, and password.'}
-                  {activeSection === 'notifications' && 'Configure how and when you receive notifications.'}
-                  {activeSection === 'privacy' && 'Control your privacy settings and data sharing.'}
-                  {activeSection === 'appearance' && 'Customize colors, themes, and display options.'}
-                  {activeSection === 'data' && 'Export, import, or delete your data.'}
-                  {activeSection === 'api' && 'View and manage your API keys for integrations.'}
-                </p>
+              <div className="text-left">
+                <p className="text-red-500 font-medium">Sign Out</p>
+                <p className="text-sm text-red-400/60">Log out of your account</p>
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          </button>
+        </motion.div>
       </div>
     </div>
   );

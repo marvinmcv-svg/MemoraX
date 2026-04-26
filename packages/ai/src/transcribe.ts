@@ -10,6 +10,26 @@ export interface TranscriptionResult {
   }>;
 }
 
+interface DeepgramResponse {
+  results?: {
+    channels?: Array<{
+      alternatives?: Array<{
+        transcript?: string;
+        confidence?: number;
+        words?: Array<{
+          word: string;
+          start: number;
+          end: number;
+          confidence: number;
+        }>;
+      }>;
+    }>;
+  };
+  metadata?: {
+    duration?: number;
+  };
+}
+
 export async function transcribeAudio(
   audioBuffer: Buffer,
   mimeType: string = 'audio/webm'
@@ -34,7 +54,7 @@ export async function transcribeAudio(
       return { text: '', confidence: 0, duration: 0, words: [] };
     }
 
-    const result = await response.json();
+    const result = await response.json() as DeepgramResponse;
     const transcript = result.results?.channels?.[0]?.alternatives?.[0];
 
     if (!transcript) {
@@ -45,7 +65,7 @@ export async function transcribeAudio(
       text: transcript.transcript || '',
       confidence: transcript.confidence || 0,
       duration: result.metadata?.duration || 0,
-      words: transcript.words?.map((w: any) => ({
+      words: transcript.words?.map((w) => ({
         word: w.word,
         start: w.start || 0,
         end: w.end || 0,
@@ -79,7 +99,7 @@ export async function transcribeFromUrl(
       return { text: '', confidence: 0, duration: 0, words: [] };
     }
 
-    const result = await response.json();
+    const result = await response.json() as DeepgramResponse;
     const transcript = result.results?.channels?.[0]?.alternatives?.[0];
 
     if (!transcript) {

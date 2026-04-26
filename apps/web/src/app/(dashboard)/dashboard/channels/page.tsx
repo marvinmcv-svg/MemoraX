@@ -1,79 +1,84 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { MessageCircle, Send, Mail, Hash, Phone, Settings, CheckCircle, XCircle } from 'lucide-react';
+import { Mic, CheckCircle, AlertCircle, ExternalLink, Plus } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const channels = [
-  { id: '1', type: 'whatsapp', name: 'WhatsApp', icon: MessageCircle, connected: true, color: '#25D366' },
-  { id: '2', type: 'telegram', name: 'Telegram', icon: Send, connected: false, color: '#0088cc' },
-  { id: '3', type: 'slack', name: 'Slack', icon: Hash, connected: false, color: '#4A154B' },
-  { id: '4', type: 'sms', name: 'SMS', icon: Phone, connected: false, color: '#64748B' },
-  { id: '5', type: 'email', name: 'Email', icon: Mail, connected: false, color: '#EA4335' },
+  { id: 'whatsapp', name: 'WhatsApp', icon: '💬', connected: false, desc: 'Send messages to capture memories' },
+  { id: 'telegram', name: 'Telegram', icon: '✈️', connected: false, desc: 'DM @memorax_bot to capture' },
+  { id: 'slack', name: 'Slack', icon: '⚡', connected: false, desc: 'Use /memorax slash command' },
+  { id: 'sms', name: 'SMS', icon: '📱', connected: false, desc: 'Send texts to your dedicated number' },
+  { id: 'email', name: 'Email', icon: '📧', connected: false, desc: 'Email capture@memorax.ai' },
 ];
 
 export default function ChannelsPage() {
-  const [channelList, setChannelList] = useState(channels);
-
-  const toggleChannel = (id: string) => {
-    setChannelList(channelList.map(c =>
-      c.id === id ? { ...c, connected: !c.connected } : c
-    ));
-  };
-
   return (
-    <div className="p-6 max-w-7xl mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-text-primary">Channels</h1>
-        <p className="text-text-secondary mt-1">Connect your messaging channels</p>
-      </div>
+    <div className="p-6 max-w-5xl mx-auto">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8"
+      >
+        <h1 className="text-3xl font-bold text-text-primary mb-2 flex items-center gap-3">
+          <Mic className="w-8 h-8 text-primary" />
+          Channels
+        </h1>
+        <p className="text-text-secondary">Connect your communication channels</p>
+      </motion.div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {channelList.map(channel => {
-          const Icon = channel.icon;
-          return (
-            <div key={channel.id} className="p-5 bg-surface rounded-xl border border-border">
-              <div className="flex items-start justify-between mb-4">
-                <div
-                  className="w-12 h-12 rounded-xl flex items-center justify-center"
-                  style={{ backgroundColor: `${channel.color}20` }}
-                >
-                  <Icon className="w-6 h-6" style={{ color: channel.color }} />
-                </div>
-                <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
-                  channel.connected ? 'bg-secondary/10 text-secondary' : 'bg-surface-hover text-text-muted'
-                }`}>
-                  {channel.connected ? (
-                    <>
-                      <CheckCircle className="w-3 h-3" />
-                      <span>Connected</span>
-                    </>
-                  ) : (
-                    <>
-                      <XCircle className="w-3 h-3" />
-                      <span>Not connected</span>
-                    </>
-                  )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {channels.map((channel, i) => (
+          <motion.div
+            key={channel.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: i * 0.1 }}
+            className="p-6 rounded-2xl border border-border bg-surface hover:border-primary/30 transition-all"
+          >
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-3xl">{channel.icon}</span>
+                <div>
+                  <h3 className="text-lg font-semibold text-text-primary">{channel.name}</h3>
+                  <p className="text-sm text-text-muted">{channel.desc}</p>
                 </div>
               </div>
-              <h3 className="font-semibold text-text-primary mb-1">{channel.name}</h3>
-              <p className="text-sm text-text-muted mb-4">
-                {channel.connected
-                  ? 'Receive memories via this channel'
-                  : 'Connect to capture memories automatically'}
-              </p>
-              <button
-                onClick={() => toggleChannel(channel.id)}
-                className={`w-full py-2 rounded-lg text-sm font-medium transition-colors ${
-                  channel.connected
-                    ? 'bg-surface-hover text-text-secondary hover:text-text-primary'
-                    : 'bg-primary text-white hover:bg-primary-glow'
-                }`}
-              >
-                {channel.connected ? 'Disconnect' : 'Connect'}
-              </button>
+              {channel.connected ? (
+                <span className="flex items-center gap-1 px-3 py-1 bg-secondary/10 text-secondary text-xs font-medium rounded-full">
+                  <CheckCircle className="w-3 h-3" />
+                  Connected
+                </span>
+              ) : (
+                <span className="flex items-center gap-1 px-3 py-1 bg-accent/10 text-accent text-xs font-medium rounded-full">
+                  <AlertCircle className="w-3 h-3" />
+                  Not connected
+                </span>
+              )}
             </div>
-          );
-        })}
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className={`w-full py-2.5 rounded-xl font-medium transition-colors flex items-center justify-center gap-2 ${
+                channel.connected
+                  ? 'bg-background text-text-primary hover:bg-surface-hover'
+                  : 'bg-primary text-white hover:bg-primary-glow'
+              }`}
+            >
+              {channel.connected ? (
+                <>
+                  <span>Manage</span>
+                  <ExternalLink className="w-4 h-4" />
+                </>
+              ) : (
+                <>
+                  <Plus className="w-4 h-4" />
+                  <span>Connect</span>
+                </>
+              )}
+            </motion.button>
+          </motion.div>
+        ))}
       </div>
     </div>
   );

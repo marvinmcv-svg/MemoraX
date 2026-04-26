@@ -1,9 +1,15 @@
 import Anthropic from '@anthropic-ai/sdk';
 import type { Memory, Briefing, Reminder } from '@memorax/shared';
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+let anthropicClient: Anthropic | null = null;
+
+function getAnthropicClient(): Anthropic | null {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  if (!anthropicClient) {
+    anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+  return anthropicClient;
+}
 
 export interface BriefingContext {
   recentMemories: Memory[];
@@ -47,6 +53,11 @@ Now generate a briefing based on this data:
 `;
 
 export async function generateBriefing(context: BriefingContext): Promise<string> {
+  const client = getAnthropicClient();
+  if (!client) {
+    return 'AI briefing not available. Configure ANTHROPIC_API_KEY for personalized briefings.';
+  }
+
   const memoriesText = context.recentMemories
     .slice(0, 5)
     .map((m) => `- "${m.content}" (${formatRelativeTime(m.createdAt, context.timezone)})`)
@@ -58,7 +69,7 @@ export async function generateBriefing(context: BriefingContext): Promise<string
 
   const userName = context.userName || 'there';
 
-  const response = await anthropic.messages.create({
+  const response = await client.messages.create({
     model: 'claude-sonnet-4-20250514',
     max_tokens: 1000,
     messages: [
