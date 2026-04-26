@@ -11,8 +11,12 @@ captureRoutes.post('/', async (req: Request, res: Response) => {
   try {
     const { channel, channelUserId, content, contentType, mediaUrl, metadata } = req.body;
 
-    if (!channel || !channelUserId || !content) {
-      return res.status(400).json({ error: 'channel, channelUserId, and content are required' });
+    if (!channel || !channelUserId) {
+      return res.status(400).json({ error: 'channel and channelUserId are required' });
+    }
+
+    if (!content || content.trim() === '') {
+      return res.status(200).json({ success: true, message: 'No content to capture' });
     }
 
     const userId = `channel-${channel}-${channelUserId}`;

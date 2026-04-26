@@ -62,6 +62,13 @@ export async function handleWhatsAppWebhook(c: Context<AppContext>) {
           const messageId = message.id;
           const phoneNumberId = value.metadata?.phone_number_id;
           const from = message.from;
+          const msgType = message.type;
+
+          if (msgType !== 'text') {
+            console.log(`Skipping non-text message type: ${msgType} from ${from}`);
+            continue;
+          }
+
           const content = message.text?.body || '';
 
           if (seenMessages.has(messageId)) {
