@@ -1,8 +1,6 @@
 [railway]
-build = "cd apps/backend && npm install && npx tsc"
+build = "pnpm install && pnpm build --filter=@memorax/backend"
 start = "node apps/backend/dist/index.js"
-builder = "docker"
-dockerfile = "apps/backend/Dockerfile"
 
 [build.env]
 NODE_ENV = "production"
