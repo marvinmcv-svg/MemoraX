@@ -1,6 +1,6 @@
-[railway]
-builder = "docker"
-dockerfile = "Dockerfile.backend"
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile.backend"
 
 [build.env]
 NODE_ENV = "production"
