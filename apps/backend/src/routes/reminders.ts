@@ -1,5 +1,6 @@
-import { Router, Request, Response, Router as ExpressRouter } from 'express';
-import { reminderStore } from '../lib/store';
+import { Router, Request, Response } from 'express';
+import { reminderStore, memoryStore } from '../lib/store';
+import { extractReminderDate } from '../lib/date-parser';
 import { v4 as uuid } from 'uuid';
 import type { ChannelType } from '../types';
 
@@ -27,6 +28,73 @@ reminderRoutes.post('/', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error creating reminder:', error);
     return res.status(500).json({ error: 'Failed to create reminder' });
+  }
+});
+
+/**
+ * POST /api/v1/reminders/nl
+ * Body: { text: "remind me to submit my essay tomorrow at 9am", deliveryChannel?: "whatsapp" }
+ * Creates a memory + reminder from natural language. Returns both.
+ */
+reminderRoutes.post('/nl', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).userId || 'anonymous';
+    const { text, deliveryChannel, memoryId: existingMemoryId } = req.body;
+
+    if (!text || typeof text !== 'string' || text.trim() === '') {
+      return res.status(400).json({ error: 'text is required' });
+    }
+
+    const parsed = extractReminderDate(text);
+
+    if (!parsed) {
+      return res.status(422).json({
+        error: 'Could not extract a date/time from the text',
+        hint: 'Try phrases like "tomorrow at 3pm", "next Monday", "in 2 hours"',
+      });
+    }
+
+    if (parsed.date <= new Date()) {
+      return res.status(422).json({
+        error: 'Parsed date is in the past',
+        parsed: parsed.date.toISOString(),
+      });
+    }
+
+    // Create a memory for this reminder if one isn't provided
+    let memoryId = existingMemoryId;
+    if (!memoryId) {
+      const memory = memoryStore.create({
+        userId,
+        content: text,
+        contentType: 'text',
+        intent: 'reminder',
+        sourceChannel: null,
+        mediaUrl: null,
+        metadata: { createdFrom: 'nl-reminder' },
+        embedding: null,
+      });
+      memoryId = memory.id;
+    }
+
+    const reminder = reminderStore.create({
+      userId,
+      memoryId,
+      remindAt: parsed.date,
+      rrule: null,
+      status: 'pending',
+      deliveryChannel: (deliveryChannel as ChannelType) || null,
+    });
+
+    return res.status(201).json({
+      reminder,
+      parsedDate: parsed.date.toISOString(),
+      confidence: parsed.confidence,
+      matchedText: parsed.original,
+    });
+  } catch (error) {
+    console.error('Error creating NL reminder:', error);
+    return res.status(500).json({ error: 'Failed to create reminder from natural language' });
   }
 });
 
