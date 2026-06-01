@@ -58,7 +58,7 @@ export default function MemoriesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [addToast]);
 
   useEffect(() => {
     fetchMemories();

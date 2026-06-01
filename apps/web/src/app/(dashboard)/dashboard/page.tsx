@@ -2,33 +2,32 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Brain, Clock, TrendingUp, Sparkles, ArrowRight, Hash, Plus, Search } from 'lucide-react';
-import { api, type Memory } from '@/lib/api';
+import { Brain, TrendingUp, Sparkles, ArrowRight, Hash, Plus, Bell, X } from 'lucide-react';
+import { api, type Memory, type Reminder } from '@/lib/api';
 import { Card, CardHeader } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { MemoryList } from '@/components/ui/MemoryCard';
 import { QuickCapture } from '@/components/features/QuickCapture';
-
-const intents = {
-  reminder: { color: '#F59E0B', label: 'Reminder' },
-  note: { color: '#6366F1', label: 'Note' },
-  task: { color: '#10B981', label: 'Task' },
-  event: { color: '#EC4899', label: 'Event' },
-  serendipity: { color: '#8B5CF6', label: 'Serendipity' },
-  unknown: { color: '#64748B', label: 'Memory' },
-};
-
 import { useToast } from '@/components/ui/Toast';
+
+function toLocalDatetimeInputValue(date: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 export default function DashboardPage() {
   const [memories, setMemories] = useState<Memory[]>([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [remindModal, setRemindModal] = useState<{ memory: Memory; remindAt: string } | null(null);
+  const [submittingRemind, setSubmittingRemind] = useState(false);
   const { addToast } = useToast();
 
   const fetchMemories = useCallback(async () => {
     try {
       const response = await api.memories.list();
       setMemories(response.data.slice(0, 5));
+      setTotalCount(response.total);
     } catch (error) {
       console.error('Failed to fetch memories:', error);
       addToast('error', 'Failed to load memories. Please try again.');
@@ -41,11 +40,62 @@ export default function DashboardPage() {
     fetchMemories();
   }, [fetchMemories]);
 
+  const oneWeekAgo = new Date();
+  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+  const thisWeekCount = memories.filter(m => new Date(m.createdAt) >= oneWeekAgo).length;
+
   const stats = [
-    { label: 'Total Memories', value: String(memories.length), icon: Brain, color: 'primary' },
-    { label: 'This Week', value: String(memories.length), icon: TrendingUp, color: 'secondary' },
-    { label: 'Quick Capture', value: 'Active', icon: Sparkles, color: 'accent' },
+    { label: 'Total Memories', value: String(totalCount), icon: Brain, color: 'primary' },
+    { label: 'This Week', value: String(thisWeekCount), icon: TrendingUp, color: 'secondary' },
+    { label: 'Recent (Dashboard)', value: String(memories.length), icon: Sparkles, color: 'accent' },
   ];
+
+  const handleRemind = (memory: Memory) => {
+    const defaultDate = new Date(Date.now() + 60 * 60 * 1000);
+    setRemindModal({ memory, remindAt: toLocalDatetimeInputValue(defaultDate) });
+  };
+
+  const submitRemind = async () => {
+    if (!remindModal) return;
+    const { memory, remindAt } = remindModal;
+    setSubmittingRemind(true);
+    try {
+      const isoRemindAt = new Date(remindAt).toISOString();
+      const reminder: Reminder = await api.reminders.create({
+        memoryId: memory.id,
+        remindAt: isoRemindAt,
+      });
+      addToast('success', `Reminder set for "${memory.content.slice(0, 30)}..."`);
+      setRemindModal(null);
+      console.log('Reminder created:', reminder.id);
+    } catch (error) {
+      console.error('Failed to create reminder:', error);
+      addToast('error', 'Failed to set reminder. Please try again.');
+    } finally {
+      setSubmittingRemind(false);
+    }
+  };
+
+  const handleArchive = async (memory: Memory) => {
+    try {
+      addToast('info', `Archive coming soon for "${memory.content.slice(0, 30)}..."`);
+    } catch (error) {
+      addToast('error', 'Failed to archive memory.');
+    }
+  };
+
+  const handleDelete = async (memory: Memory) => {
+    if (!confirm(`Delete this memory?\n\n"${memory.content.slice(0, 80)}"`)) return;
+    try {
+      await api.memories.delete(memory.id);
+      setMemories(prev => prev.filter(m => m.id !== memory.id));
+      setTotalCount(prev => Math.max(0, prev - 1));
+      addToast('success', 'Memory deleted.');
+    } catch (error) {
+      console.error('Failed to delete memory:', error);
+      addToast('error', 'Failed to delete memory. Please try again.');
+    }
+  };
 
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto">
@@ -187,13 +237,84 @@ export default function DashboardPage() {
             <MemoryList
               memories={memories}
               onMemoryClick={(memory) => console.log('Memory clicked:', memory.id)}
-              onRemind={(memory) => console.log('Remind:', memory.id)}
-              onArchive={(memory) => console.log('Archive:', memory.id)}
-              onDelete={(memory) => console.log('Delete:', memory.id)}
+              onRemind={handleRemind}
+              onArchive={handleArchive}
+              onDelete={handleDelete}
             />
           )}
         </AnimatePresence>
       </div>
+
+      <AnimatePresence>
+        {remindModal && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+            onClick={() => !submittingRemind && setRemindModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-surface border border-border rounded-3xl overflow-hidden"
+            >
+              <div className="p-6 border-b border-border flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-accent-500/10 flex items-center justify-center">
+                    <Bell className="w-5 h-5 text-accent-400" />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-text-primary">Set Reminder</h3>
+                    <p className="text-xs text-text-muted line-clamp-1">{remindModal.memory.content}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setRemindModal(null)}
+                  disabled={submittingRemind}
+                  className="p-2 hover:bg-background rounded-xl transition-colors disabled:opacity-50"
+                >
+                  <X className="w-5 h-5 text-text-muted" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-text-secondary mb-2">
+                    When to remind you
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={remindModal.remindAt}
+                    onChange={(e) => setRemindModal({ ...remindModal, remindAt: e.target.value })}
+                    disabled={submittingRemind}
+                    className="w-full px-4 py-3 bg-background border border-border rounded-xl text-text-primary focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 border-t border-border flex gap-3">
+                <button
+                  onClick={() => setRemindModal(null)}
+                  disabled={submittingRemind}
+                  className="flex-1 py-3 bg-background text-text-primary rounded-xl font-medium hover:bg-surface-hover transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitRemind}
+                  disabled={submittingRemind || !remindModal.remindAt}
+                  className="flex-1 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors disabled:opacity-50"
+                >
+                  {submittingRemind ? 'Setting...' : 'Set Reminder'}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
