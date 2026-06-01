@@ -9,7 +9,7 @@
       box-sizing: border-box;
     }
     body {
-      width: 320px;
+      width: 360px;
       background: #0A0A0F;
       color: #F8FAFC;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -18,91 +18,268 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 16px;
-      border-bottom: 1px solid #2A2A3A;
+      padding: 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      background: linear-gradient(180deg, rgba(99,102,241,0.08) 0%, transparent 100%);
     }
     .logo {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
       background: linear-gradient(135deg, #6366F1 0%, #818CF8 100%);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: bold;
-      font-size: 18px;
+      font-weight: 700;
+      font-size: 20px;
+      box-shadow: 0 4px 12px rgba(99,102,241,0.3);
+    }
+    .header-text {
+      flex: 1;
     }
     .title {
       font-weight: 600;
-      font-size: 16px;
+      font-size: 17px;
+      letter-spacing: -0.3px;
+    }
+    .subtitle {
+      font-size: 12px;
+      color: #64748B;
+      margin-top: 2px;
     }
     .content {
+      padding: 20px;
+    }
+    .capture-box {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
       padding: 16px;
+      transition: all 0.2s ease;
+    }
+    .capture-box:focus-within {
+      border-color: rgba(99,102,241,0.5);
+      background: rgba(99,102,241,0.05);
+      box-shadow: 0 0 0 4px rgba(99,102,241,0.1);
+    }
+    .page-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .page-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      background: rgba(99,102,241,0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .page-details {
+      flex: 1;
+      min-width: 0;
+    }
+    .page-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: #F8FAFC;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .page-url {
+      font-size: 11px;
+      color: #64748B;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
     .textarea {
       width: 100%;
-      min-height: 120px;
-      background: #12121A;
-      border: 1px solid #2A2A3A;
-      border-radius: 12px;
-      padding: 12px;
+      min-height: 100px;
+      background: transparent;
+      border: none;
+      padding: 0;
       color: #F8FAFC;
       font-size: 14px;
+      line-height: 1.6;
       resize: none;
       font-family: inherit;
     }
     .textarea:focus {
       outline: none;
-      border-color: #6366F1;
     }
     .textarea::placeholder {
-      color: #64748B;
+      color: #475569;
+    }
+    .char-count {
+      text-align: right;
+      font-size: 11px;
+      color: #475569;
+      margin-top: 8px;
+    }
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
     }
     .save-btn {
-      width: 100%;
-      margin-top: 12px;
-      padding: 14px;
-      background: #6366F1;
+      flex: 1;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, #6366F1 0%, #818CF8 100%);
       border: none;
-      border-radius: 10px;
+      border-radius: 12px;
       color: white;
       font-weight: 600;
       font-size: 14px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: all 0.2s ease;
+      box-shadow: 0 4px 12px rgba(99,102,241,0.3);
     }
-    .save-btn:hover {
-      background: #818CF8;
+    .save-btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(99,102,241,0.4);
     }
     .save-btn:disabled {
       background: #2A2A3A;
       cursor: not-allowed;
+      box-shadow: none;
     }
-    .info {
-      margin-top: 16px;
-      padding: 12px;
-      background: #12121A;
-      border-radius: 10px;
+    .cancel-btn {
+      padding: 14px 20px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      color: #94A3B8;
+      font-weight: 500;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .cancel-btn:hover {
+      background: rgba(255,255,255,0.08);
+      color: #F8FAFC;
+    }
+    .shortcuts {
+      margin-top: 20px;
+      padding: 14px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.04);
+    }
+    .shortcuts-title {
+      font-size: 11px;
+      font-weight: 600;
+      color: #64748B;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+    }
+    .shortcut {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       font-size: 12px;
+      color: #64748B;
+      margin-bottom: 6px;
+    }
+    .shortcut:last-child {
+      margin-bottom: 0;
+    }
+    .shortcut kbd {
+      background: rgba(255,255,255,0.08);
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: inherit;
       color: #94A3B8;
     }
-    .info strong {
-      color: #F8FAFC;
+    .success-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      text-align: center;
+    }
+    .success-state.show {
+      display: flex;
+    }
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.1) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 28px;
+    }
+    .success-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .success-text {
+      font-size: 13px;
+      color: #64748B;
+    }
+    .capture-form {
+      display: block;
+    }
+    .capture-form.hidden {
+      display: none;
     }
   </style>
 </head>
 <body>
   <div class="header">
     <div class="logo">M</div>
-    <span class="title">MemoraX</span>
-  </div>
-  <div class="content">
-    <textarea class="textarea" id="capture-text" placeholder="What's worth remembering?"></textarea>
-    <button class="save-btn" id="save-btn">Save Memory</button>
-    <div class="info">
-      <strong>Tip:</strong> Select text on any webpage, right-click, and choose "Save to MemoraX" for quick capture.
+    <div class="header-text">
+      <div class="title">MemoraX</div>
+      <div class="subtitle">Capture from anywhere</div>
     </div>
   </div>
+
+  <div class="content">
+    <div class="capture-form" id="capture-form">
+      <div class="capture-box">
+        <div class="page-info" id="page-info">
+          <div class="page-icon">🌐</div>
+          <div class="page-details">
+            <div class="page-title" id="page-title">Loading...</div>
+            <div class="page-url" id="page-url">-</div>
+          </div>
+        </div>
+        <textarea class="textarea" id="capture-text" placeholder="What's worth remembering?"></textarea>
+        <div class="char-count"><span id="char-count">0</span> characters</div>
+      </div>
+
+      <div class="actions">
+        <button class="cancel-btn" id="cancel-btn">Clear</button>
+        <button class="save-btn" id="save-btn">Save Memory</button>
+      </div>
+
+      <div class="shortcuts">
+        <div class="shortcuts-title">Keyboard Shortcuts</div>
+        <div class="shortcut"><kbd>Ctrl</kbd> + <kbd>Enter</kbd> to save</div>
+        <div class="shortcut"><kbd>Esc</kbd> to clear</div>
+      </div>
+    </div>
+
+    <div class="success-state" id="success-state">
+      <div class="success-icon">✓</div>
+      <div class="success-title">Memory Saved!</div>
+      <div class="success-text">Your memory has been captured successfully.</div>
+    </div>
+  </div>
+
   <script src="popup.js"></script>
 </body>
 </html>

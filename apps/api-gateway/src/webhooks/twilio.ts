@@ -13,7 +13,7 @@ export async function handleTwilioWebhook(c: Context<AppContext>) {
 
   console.log(`SMS from ${from}: ${content}`);
 
-  await fetch(`${c.env.BACKEND_URL}/api/capture`, {
+  await fetch(`${c.env.BACKEND_URL}/api/v1/capture`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

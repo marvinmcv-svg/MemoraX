@@ -64,12 +64,31 @@ export async function handleWhatsAppWebhook(c: Context<AppContext>) {
           const from = message.from;
           const msgType = message.type;
 
-          if (msgType !== 'text') {
-            console.log(`Skipping non-text message type: ${msgType} from ${from}`);
+          let content = '';
+          let mediaUrl: string | undefined;
+          let contentType = 'text';
+
+          if (msgType === 'text') {
+            content = message.text?.body || '';
+          } else if (msgType === 'image') {
+            mediaUrl = message.image?.id;
+            contentType = 'image';
+            content = message.image?.caption || '';
+          } else if (msgType === 'video') {
+            mediaUrl = message.video?.id;
+            contentType = 'video';
+            content = message.video?.caption || '';
+          } else if (msgType === 'audio') {
+            mediaUrl = message.audio?.id;
+            contentType = 'audio';
+          } else if (msgType === 'document') {
+            mediaUrl = message.document?.id;
+            contentType = 'document';
+            content = message.document?.caption || message.document?.filename || '';
+          } else {
+            console.log(`Skipping unsupported message type: ${msgType} from ${from}`);
             continue;
           }
-
-          const content = message.text?.body || '';
 
           if (seenMessages.has(messageId)) {
             console.log(`Duplicate message ${messageId}, skipping`);
@@ -81,7 +100,7 @@ export async function handleWhatsAppWebhook(c: Context<AppContext>) {
             seenMessages.clear();
           }
 
-          console.log(`WhatsApp message from ${from}: ${content}`);
+          console.log(`WhatsApp ${msgType} from ${from}: ${content}`);
 
           try {
             const captureRes = await fetch(`${c.env.BACKEND_URL}/api/v1/capture`, {
@@ -91,8 +110,9 @@ export async function handleWhatsAppWebhook(c: Context<AppContext>) {
                 channel: 'whatsapp',
                 channelUserId: from,
                 phoneNumberId,
-                content,
-                contentType: 'text',
+                content: content || `[${msgType}]`,
+                contentType,
+                mediaUrl,
                 metadata: {
                   messageId,
                   phoneNumberId,

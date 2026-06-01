@@ -16,7 +16,7 @@ export async function handleEmailWebhook(c: Context<AppContext>) {
 
   const fullContent = subject ? `[Subject: ${subject}]\n${content}` : content;
 
-  await fetch(`${c.env.BACKEND_URL}/api/capture`, {
+  await fetch(`${c.env.BACKEND_URL}/api/v1/capture`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({

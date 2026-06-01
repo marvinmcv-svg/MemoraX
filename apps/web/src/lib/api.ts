@@ -1,5 +1,5 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://memorax-backend.up.railway.app';
-const CLERK_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || 'pk_test_Y29taWMtY3Jvdy05MS5jbGVyay5hY2NvdW50cy5kZXYk';
+const CLERK_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
 
 interface ApiOptions {
   method?: string;
@@ -110,5 +110,36 @@ export const api = {
         method: 'POST',
         body: { content },
       }),
+  },
+
+  kg: {
+    stats: () => apiRequest<{ entities: number; relationships: number; types: string[] }>('/api/v1/kg/stats'),
+    entities: (params?: { type?: string; value?: string }) =>
+      apiRequest<{ data: unknown[]; count: number }>('/api/v1/kg/entities', { ...(params || {}) }),
+    search: (q: string) => apiRequest<{ query: string; results: unknown[]; total: number }>(`/api/v1/kg/search?q=${encodeURIComponent(q)}`),
+    discover: () => apiRequest<{ memories: unknown[]; count: number }>('/api/v1/serendipity/discover'),
+    recordMemory: (memory: { id: string; content: string; intent: string; sourceChannel: string | null; createdAt: string }) =>
+      apiRequest<{ success: boolean }>('/api/v1/serendipity/record', { method: 'POST', body: memory }),
+    markSurfaced: (memoryId: string) =>
+      apiRequest<{ success: boolean }>('/api/v1/serendipity/mark-surfaced', { method: 'POST', body: { memoryId } }),
+  },
+
+  workspaces: {
+    list: () => apiRequest<{ data: unknown[] }>('/api/v1/workspaces'),
+    create: (data: { name: string; description?: string }) =>
+      apiRequest<unknown>('/api/v1/workspaces', { method: 'POST', body: data }),
+    get: (id: string) => apiRequest<unknown>(`/api/v1/workspaces/${id}`),
+    addMemory: (id: string, memoryId: string) =>
+      apiRequest<{ success: boolean }>(`/api/v1/workspaces/${id}/memories`, { method: 'POST', body: { memoryId } }),
+    removeMemory: (id: string, memoryId: string) =>
+      apiRequest<{ success: boolean }>(`/api/v1/workspaces/${id}/memories/${memoryId}`, { method: 'DELETE' }),
+  },
+
+  apiKeys: {
+    list: () => apiRequest<{ data: unknown[] }>('/api/v1/api-keys'),
+    create: (data: { name: string; permissions?: string[] }) =>
+      apiRequest<{ key: string; name: string; createdAt: string }>('/api/v1/api-keys', { method: 'POST', body: data }),
+    revoke: (id: string) =>
+      apiRequest<{ success: boolean }>(`/api/v1/api-keys/${id}`, { method: 'DELETE' }),
   },
 };

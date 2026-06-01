@@ -1,6 +1,7 @@
 import { Router, Request, Response, Router as ExpressRouter } from 'express';
 import { aiPipeline } from '../services/ai-pipeline';
 import { knowledgeGraph } from '../lib/knowledge-graph';
+import { transcribeAudio } from '@memorax/ai';
 
 const aiRoutes: Router = Router();
 
@@ -72,11 +73,48 @@ aiRoutes.post('/extract', async (req: Request, res: Response) => {
 
 aiRoutes.post('/transcribe', async (req: Request, res: Response) => {
   try {
+    const apiKey = process.env.DEEPGRAM_API_KEY;
+    if (!apiKey) {
+      return res.status(503).json({
+        error: 'Transcription not configured - DEEPGRAM_API_KEY required',
+        text: '',
+        confidence: 0,
+        duration: 0,
+        words: [],
+      });
+    }
+
+    const { audioUrl, mimeType } = req.body;
+
+    if (!audioUrl) {
+      return res.status(400).json({ error: 'audioUrl is required' });
+    }
+
+    let audioBuffer: Buffer;
+    let resolvedMimeType = mimeType || 'audio/webm';
+
+    if (audioUrl.startsWith('data:')) {
+      const base64Data = audioUrl.split(',')[1];
+      audioBuffer = Buffer.from(base64Data, 'base64');
+      const mimeMatch = audioUrl.match(/data:([^;]+)/);
+      if (mimeMatch) resolvedMimeType = mimeMatch[1];
+    } else {
+      const response = await fetch(audioUrl);
+      if (!response.ok) {
+        return res.status(400).json({ error: 'Failed to fetch audio from URL' });
+      }
+      audioBuffer = Buffer.from(await response.arrayBuffer());
+      const contentType = response.headers.get('content-type');
+      if (contentType) resolvedMimeType = contentType;
+    }
+
+    const result = await transcribeAudio(audioBuffer, resolvedMimeType);
+
     return res.json({
-      text: 'Transcription not configured - requires DEEPGRAM_API_KEY',
-      confidence: 0,
-      duration: 0,
-      words: [],
+      text: result.text,
+      confidence: result.confidence,
+      duration: result.duration,
+      words: result.words,
     });
   } catch (error) {
     console.error('Error transcribing audio:', error);

@@ -1,348 +1,251 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { Search, Sparkles, Clock, Hash, X, Filter, ArrowRight } from 'lucide-react';
+import { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Search, Filter, X, SlidersHorizontal } from 'lucide-react';
 import { api, type Memory } from '@/lib/api';
+import { MemoryList } from '@/components/ui/MemoryCard';
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
 
-const intents = {
-  reminder: { color: '#F59E0B', label: 'Reminder' },
-  note: { color: '#6366F1', label: 'Note' },
-  task: { color: '#10B981', label: 'Task' },
-  event: { color: '#EC4899', label: 'Event' },
-  serendipity: { color: '#8B5CF6', label: 'Serendipity' },
-  question: { color: '#06B6D4', label: 'Question' },
-  unknown: { color: '#64748B', label: 'Memory' },
-};
+type Intent = 'reminder' | 'note' | 'task' | 'event' | 'serendipity' | 'question' | 'unknown';
 
-const channelIcons: Record<string, string> = {
-  whatsapp: '💬',
-  telegram: '✈️',
-  slack: '⚡',
-  sms: '📱',
-  email: '📧',
-  app: '🌐',
-};
+const intentFilters: { value: Intent | 'all'; label: string; color: string }[] = [
+  { value: 'all', label: 'All', color: '#64748B' },
+  { value: 'reminder', label: 'Reminders', color: '#F59E0B' },
+  { value: 'note', label: 'Notes', color: '#6366F1' },
+  { value: 'task', label: 'Tasks', color: '#10B981' },
+  { value: 'event', label: 'Events', color: '#EC4899' },
+  { value: 'serendipity', label: 'Serendipity', color: '#8B5CF6' },
+];
 
-function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
-interface SearchResult {
-  memory: Memory;
-  score: number;
-  highlights: string[];
-}
+const channelFilters = [
+  { value: 'all', label: 'All Channels' },
+  { value: 'whatsapp', label: 'WhatsApp' },
+  { value: 'telegram', label: 'Telegram' },
+  { value: 'slack', label: 'Slack' },
+  { value: 'sms', label: 'SMS' },
+  { value: 'email', label: 'Email' },
+  { value: 'app', label: 'App' },
+];
 
 export default function SearchPage() {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
+  const [results, setResults] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(false);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [filterIntent, setFilterIntent] = useState<string | null>(null);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [searched, setSearched] = useState(false);
+  const [selectedIntent, setSelectedIntent] = useState<Intent | 'all'>('all');
+  const [selectedChannel, setSelectedChannel] = useState('all');
+  const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('recentSearches');
-    if (saved) {
-      setRecentSearches(JSON.parse(saved).slice(0, 5));
-    }
-  }, []);
-
-  const performSearch = useCallback(async (searchQuery: string) => {
-    if (!searchQuery.trim()) return;
+  const handleSearch = useCallback(async () => {
+    if (!query.trim()) return;
 
     setLoading(true);
-    setHasSearched(true);
-
-    const searches = [searchQuery, ...recentSearches.filter(s => s !== searchQuery)].slice(0, 5);
-    setRecentSearches(searches);
-    localStorage.setItem('recentSearches', JSON.stringify(searches));
-
+    setSearched(true);
     try {
-      const response = await api.memories.search(searchQuery);
-      setResults(response.data.map((item: { memory: Memory; score: number }) => ({
-        memory: item.memory,
-        score: item.score,
-        highlights: [searchQuery],
-      })));
+      const response = await api.memories.search({ query });
+      setResults(response.data || []);
     } catch (error) {
       console.error('Search failed:', error);
       setResults([]);
     } finally {
       setLoading(false);
     }
-  }, [recentSearches]);
+  }, [query]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
-      performSearch(query);
+      handleSearch();
     }
   };
 
-  const filteredResults = results.filter(r => {
-    if (filterIntent && r.memory.intent !== filterIntent) return false;
+  const filteredResults = results.filter((memory) => {
+    if (selectedIntent !== 'all' && memory.intent !== selectedIntent) return false;
+    if (selectedChannel !== 'all' && memory.sourceChannel !== selectedChannel) return false;
     return true;
   });
 
-  const suggestedQueries = [
-    'remind me to call mom',
-    'meeting with team',
-    'project ideas',
-    'things I learned this week',
-    'travel plans',
-  ];
+  const clearFilters = () => {
+    setSelectedIntent('all');
+    setSelectedChannel('all');
+  };
+
+  const hasActiveFilters = selectedIntent !== 'all' || selectedChannel !== 'all';
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
+    <div className="p-6 lg:p-8 max-w-5xl mx-auto">
+      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         className="mb-8"
       >
-        <h1 className="text-3xl font-bold text-text-primary mb-2 flex items-center gap-3">
-          <Search className="w-8 h-8 text-primary" />
-          Search Memories
-        </h1>
-        <p className="text-text-secondary">Find anything using natural language</p>
+        <h1 className="text-3xl font-bold text-text-primary mb-2">Search Memories</h1>
+        <p className="text-text-secondary">Find anything you've captured with natural language search.</p>
       </motion.div>
 
-      <div className="relative mb-8">
-        <div className="relative">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-text-muted" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Search memories... Try: 'what did I discuss about the project launch?'"
-            className="w-full pl-14 pr-14 py-5 bg-surface border border-border rounded-2xl text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all text-lg"
-          />
+      {/* Search Input */}
+      <div className="relative mb-6">
+        <div className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted">
+          <Search className="w-5 h-5" />
+        </div>
+        <input
+          type="text"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          onKeyDown={handleKeyDown}
+          placeholder="Search memories... Try: 'what did I discuss about the project?'"
+          className="w-full pl-12 pr-32 py-4 bg-surface border border-border rounded-2xl text-text-primary placeholder:text-text-muted focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 transition-all text-lg"
+        />
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
           {query && (
             <button
               onClick={() => setQuery('')}
-              className="absolute right-5 top-1/2 -translate-y-1/2 p-2 hover:bg-surface-hover rounded-full transition-colors"
+              className="p-2 text-text-muted hover:text-text-primary hover:bg-surface-hover rounded-xl transition-colors"
             >
-              <X className="w-5 h-5 text-text-muted" />
+              <X className="w-4 h-4" />
             </button>
+          )}
+          <Button onClick={handleSearch} loading={loading} size="md">
+            Search
+          </Button>
+        </div>
+      </div>
+
+      {/* Filters */}
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl border transition-colors ${
+                showFilters || hasActiveFilters
+                  ? 'border-primary-500/30 bg-primary-500/10 text-primary-400'
+                  : 'border-border text-text-secondary hover:text-text-primary hover:border-primary-500/30'
+              }`}
+            >
+              <SlidersHorizontal className="w-4 h-4" />
+              <span className="text-sm font-medium">Filters</span>
+            </button>
+
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="flex items-center gap-1 px-3 py-1.5 text-sm text-text-muted hover:text-text-primary transition-colors"
+              >
+                <X className="w-3 h-3" />
+                Clear filters
+              </button>
+            )}
+          </div>
+
+          {searched && (
+            <span className="text-sm text-text-muted">
+              {filteredResults.length} result{filteredResults.length !== 1 ? 's' : ''}
+            </span>
           )}
         </div>
 
-        <motion.button
-          onClick={() => performSearch(query)}
-          disabled={!query.trim() || loading}
-          className="absolute right-4 top-1/2 -translate-y-1/2 px-6 py-2.5 bg-primary text-white rounded-xl font-medium hover:bg-primary-glow transition-all disabled:opacity-50 flex items-center gap-2"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          {loading ? (
+        <AnimatePresence>
+          {showFilters && (
             <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-              className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-            />
-          ) : (
-            <>
-              <Sparkles className="w-5 h-5" />
-              <span>AI Search</span>
-            </>
-          )}
-        </motion.button>
-      </div>
-
-      {!hasSearched && (
-        <>
-          {recentSearches.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="mb-8"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="overflow-hidden"
             >
-              <h2 className="text-sm font-medium text-text-muted mb-3 flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                Recent searches
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {recentSearches.map((search, i) => (
-                  <motion.button
-                    key={search}
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: i * 0.05 }}
-                    onClick={() => {
-                      setQuery(search);
-                      performSearch(search);
-                    }}
-                    className="px-4 py-2 bg-surface border border-border rounded-xl text-sm text-text-secondary hover:text-text-primary hover:border-primary/30 transition-all flex items-center gap-2"
-                  >
-                    <Clock className="w-3 h-3" />
-                    {search}
-                  </motion.button>
-                ))}
+              <div className="p-6 rounded-2xl border border-border bg-surface space-y-6">
+                {/* Intent Filter */}
+                <div>
+                  <label className="text-sm font-medium text-text-secondary mb-3 block">Intent Type</label>
+                  <div className="flex flex-wrap gap-2">
+                    {intentFilters.map((filter) => (
+                      <button
+                        key={filter.value}
+                        onClick={() => setSelectedIntent(filter.value)}
+                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                          selectedIntent === filter.value
+                            ? 'bg-surface border border-primary-500/30 text-primary-400'
+                            : 'bg-background border border-border text-text-secondary hover:text-text-primary hover:border-primary-500/30'
+                        }`}
+                      >
+                        {filter.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Channel Filter */}
+                <div>
+                  <label className="text-sm font-medium text-text-secondary mb-3 block">Source Channel</label>
+                  <div className="flex flex-wrap gap-2">
+                    {channelFilters.map((filter) => (
+                      <button
+                        key={filter.value}
+                        onClick={() => setSelectedChannel(filter.value)}
+                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                          selectedChannel === filter.value
+                            ? 'bg-surface border border-primary-500/30 text-primary-400'
+                            : 'bg-background border border-border text-text-secondary hover:text-text-primary hover:border-primary-500/30'
+                        }`}
+                      >
+                        {filter.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
+        </AnimatePresence>
+      </div>
 
+      {/* Results */}
+      <AnimatePresence mode="wait">
+        {loading ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="space-y-4"
+          >
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-32 bg-surface rounded-2xl animate-pulse" />
+            ))}
+          </motion.div>
+        ) : searched && filteredResults.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="p-12 rounded-2xl border border-border bg-surface text-center"
+          >
+            <Search className="w-12 h-12 text-text-muted mx-auto mb-4" />
+            <p className="text-text-secondary text-lg mb-2">No memories found</p>
+            <p className="text-text-muted">Try adjusting your search or filters</p>
+          </motion.div>
+        ) : filteredResults.length > 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
           >
-            <h2 className="text-sm font-medium text-text-muted mb-3 flex items-center gap-2">
-              <Sparkles className="w-4 h-4" />
-              Suggested searches
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {suggestedQueries.map((suggestion, i) => (
-                <motion.button
-                  key={suggestion}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.05 }}
-                  onClick={() => {
-                    setQuery(suggestion);
-                    performSearch(suggestion);
-                  }}
-                  className="p-4 bg-surface border border-border rounded-xl hover:border-primary/30 transition-all text-left group"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-text-primary">{suggestion}</span>
-                    <ArrowRight className="w-4 h-4 text-text-muted group-hover:text-primary transition-colors" />
-                  </div>
-                </motion.button>
-              ))}
-            </div>
+            <MemoryList
+              memories={filteredResults}
+              onMemoryClick={(memory) => console.log('Memory clicked:', memory.id)}
+            />
           </motion.div>
-        </>
-      )}
-
-      {hasSearched && (
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-sm text-text-muted">
-              {loading ? 'Searching...' : `${filteredResults.length} results for "${query}"`}
-            </p>
-            <button
-              onClick={() => setFilterIntent(null)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
-                filterIntent ? 'bg-surface text-text-secondary border border-border hover:text-text-primary' : 'bg-primary text-white'
-              }`}
-            >
-              <Filter className="w-3 h-3" />
-              {filterIntent ? `Filtered: ${intents[filterIntent as keyof typeof intents]?.label}` : 'All types'}
-            </button>
-          </div>
-
-          {!loading && (
-            <div className="flex flex-wrap gap-2 mb-6">
-              {Object.entries(intents).map(([key, { label, color }]) => (
-                <button
-                  key={key}
-                  onClick={() => setFilterIntent(filterIntent === key ? null : key)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${
-                    filterIntent === key
-                      ? 'text-white'
-                      : 'bg-surface text-text-secondary hover:text-text-primary border border-border'
-                  }`}
-                  style={filterIntent === key ? { backgroundColor: color } : {}}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {loading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map(i => (
-                <div key={i} className="h-32 bg-surface rounded-2xl animate-pulse" />
-              ))}
-            </div>
-          ) : filteredResults.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-16 bg-surface rounded-2xl border border-border"
-            >
-              <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-primary/10 flex items-center justify-center">
-                <Search className="w-8 h-8 text-primary" />
-              </div>
-              <p className="text-text-primary text-lg font-medium mb-1">No memories found</p>
-              <p className="text-text-secondary">Try different keywords or connect AI services for semantic search</p>
-            </motion.div>
-          ) : (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="space-y-4"
-            >
-              <AnimatePresence mode="popLayout">
-                {filteredResults.map((result, i) => {
-                  const intent = intents[result.memory.intent as keyof typeof intents] || intents.unknown;
-                  return (
-                    <motion.div
-                      key={result.memory.id}
-                      layout
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -20 }}
-                      transition={{ delay: i * 0.05 }}
-                      className="p-6 bg-surface rounded-2xl border border-border hover:border-primary/30 transition-all"
-                    >
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="px-2 py-1 text-xs font-medium rounded-full"
-                            style={{
-                              backgroundColor: `${intent.color}20`,
-                              color: intent.color,
-                            }}
-                          >
-                            {intent.label}
-                          </div>
-                          <span className="text-xs text-text-muted">
-                            {channelIcons[result.memory.sourceChannel || 'app']} {result.memory.sourceChannel || 'app'}
-                          </span>
-                          <span className="text-xs text-text-muted flex items-center gap-1">
-                            <Hash className="w-3 h-3" />
-                            {Math.round(result.score * 100)}% match
-                          </span>
-                        </div>
-                        <span className="text-xs text-text-muted">{formatRelativeTime(result.memory.createdAt)}</span>
-                      </div>
-
-                      <p className="text-text-primary text-lg leading-relaxed mb-3">{result.memory.content}</p>
-
-                      {result.highlights.length > 0 && (
-                        <div className="flex flex-wrap gap-2">
-                          {result.highlights.map((highlight, hi) => (
-                            <span
-                              key={hi}
-                              className="px-2 py-1 bg-primary/10 text-primary text-xs rounded-lg"
-                            >
-                              matched: {highlight}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
-            </motion.div>
-          )}
-        </div>
-      )}
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="p-12 rounded-2xl border border-border bg-surface text-center"
+          >
+            <Search className="w-12 h-12 text-text-muted mx-auto mb-4" />
+            <p className="text-text-secondary text-lg mb-2">Search your memories</p>
+            <p className="text-text-muted">Type a question or phrase to find related memories</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

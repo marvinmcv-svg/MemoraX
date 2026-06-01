@@ -258,26 +258,26 @@ See DATABASE SCHEMA section in spec.
 - [x] Authentication (Clerk)
 
 ### Phase 2: Messaging Channels
-- [ ] WhatsApp integration
-- [ ] Telegram integration
-- [ ] Slack integration
-- [ ] SMS (Twilio)
-- [ ] Email (Postmark)
+- [x] WhatsApp integration
+- [x] Telegram integration
+- [x] Slack integration
+- [x] SMS (Twilio)
+- [x] Email (Postmark)
 
 ### Phase 3: AI Pipeline
-- [ ] Intent classifier
-- [ ] Entity extractor
-- [ ] Voice transcription
-- [ ] Embedding service
-- [ ] Briefing generator
+- [x] Intent classifier
+- [x] Entity extractor
+- [x] Voice transcription
+- [x] Embedding service
+- [x] Briefing generator
 
 ### Phase 4: Frontend
-- [ ] Next.js dashboard
-- [ ] React Native app
-- [ ] Chrome extension
+- [x] Next.js dashboard
+- [x] React Native app
+- [x] Chrome extension
 
 ### Phase 5: Advanced Features
-- [ ] Knowledge graph service
-- [ ] Serendipity engine
-- [ ] Team workspaces
-- [ ] Public API
+- [x] Knowledge graph service
+- [x] Serendipity engine
+- [x] Team workspaces
+- [x] Public API

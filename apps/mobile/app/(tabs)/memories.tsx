@@ -1,41 +1,20 @@
-import { View, Text, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, TextInput } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
-import { Search, Filter } from '@expo/vector-icons';
+import { Search, Filter, Plus } from '@expo/vector-icons';
 import { api, type Memory } from '../../lib/api';
-
-const intents = {
-  reminder: { color: '#F59E0B', label: 'Reminder' },
-  note: { color: '#6366F1', label: 'Note' },
-  task: { color: '#10B981', label: 'Task' },
-  event: { color: '#EC4899', label: 'Event' },
-  serendipity: { color: '#8B5CF6', label: 'Serendipity' },
-  unknown: { color: '#64748B', label: 'Memory' },
-};
-
-function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
+import { MemoryList } from '../../components/ui/MemoryCard';
+import { Button } from '../../components/ui/Button';
 
 export default function MemoriesScreen() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchMemories = useCallback(async () => {
     try {
       const response = await api.memories.list();
-      setMemories(response.data);
+      setMemories(response.data || []);
     } catch (error) {
       console.error('Failed to fetch memories:', error);
     } finally {
@@ -48,36 +27,56 @@ export default function MemoriesScreen() {
     fetchMemories();
   }, [fetchMemories]);
 
-  const onRefresh = () => {
+  const onRefresh = useCallback(() => {
     setRefreshing(true);
     fetchMemories();
+  }, [fetchMemories]);
+
+  const filteredMemories = memories.filter((memory) => {
+    if (!searchQuery.trim()) return true;
+    return memory.content.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  const handleFilterPress = () => {
+    console.log('Filter pressed');
+  };
+
+  const handleAddMemory = () => {
+    console.log('Add memory pressed');
   };
 
   return (
-    <View className="flex-1 bg-background">
-      <View className="px-4 pt-12 pb-4">
-        <Text className="text-2xl font-bold text-text-primary">Memories</Text>
+    <View className="flex-1 bg-background-base">
+      {/* Header */}
+      <View className="px-4 pt-14 pb-4">
+        <Text className="text-3xl font-bold text-text-primary tracking-tight">Memories</Text>
         <Text className="text-text-secondary mt-1">All your captured memories</Text>
       </View>
 
+      {/* Search& Filter */}
       <View className="px-4 mb-4">
         <View className="flex-row gap-2">
           <View className="flex-1 flex-row items-center bg-surface rounded-xl px-3 border border-border">
-            <Search size={20} color="#64748B" />
-            <TouchableOpacity className="flex-1">
-              <Text className="text-text-muted ml-2 py-3">Search memories...</Text>
-            </TouchableOpacity>
+            <Search size={18} color="#64748B" />
+            <TextInput
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="Search memories..."
+              placeholderTextColor="#64748B"
+              className="flex-1 ml-2 py-3 text-text-primary text-sm"
+            />
           </View>
-          <TouchableOpacity className="p-3 bg-surface rounded-xl border border-border">
-            <Filter size={20} color="#94A3B8" />
+          <TouchableOpacity onPress={handleFilterPress} className="p-3 bg-surface rounded-xl border border-border">
+            <Filter size={18} color="#94A3B8" />
           </TouchableOpacity>
         </View>
       </View>
 
+      {/* Memories List */}
       <FlatList
-        data={memories}
+        data={filteredMemories}
         keyExtractor={(item) => item.id}
-        contentContainerClassName="px-4 pb-6"
+        contentContainerClassName="px-4 pb-24"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -86,34 +85,35 @@ export default function MemoriesScreen() {
           />
         }
         renderItem={({ item }) => (
-          <TouchableOpacity className="bg-surface rounded-xl p-4 mb-3 border border-border">
-            <View className="flex-row items-center gap-2 mb-2">
-              <View
-                className="px-2 py-1 rounded-full"
-                style={{ backgroundColor: `${intents[item.intent as keyof typeof intents]?.color || '#64748B'}20` }}
-              >
-                <Text
-                  className="text-xs font-medium"
-                  style={{ color: intents[item.intent as keyof typeof intents]?.color || '#64748B' }}
-                >
-                  {intents[item.intent as keyof typeof intents]?.label || 'Memory'}
-                </Text>
-              </View>
-              <Text className="text-text-muted text-xs">{item.sourceChannel || 'app'}</Text>
-              <View className="flex-1" />
-              <Text className="text-text-muted text-xs">{formatRelativeTime(item.createdAt)}</Text>
-            </View>
-            <Text className="text-text-primary text-sm leading-relaxed">{item.content}</Text>
-          </TouchableOpacity>
+          <View className="mb-3">
+            <MemoryList
+              memories={[item]}
+              onMemoryPress={(memory) => console.log('Memory pressed:', memory.id)}
+              onRemind={(memory) => console.log('Remind:', memory.id)}
+              onArchive={(memory) => console.log('Archive:', memory.id)}
+              onDelete={(memory) => console.log('Delete:', memory.id)}
+            />
+          </View>
         )}
         ListEmptyComponent={
           loading ? (
-            <View className="bg-surface rounded-xl p-4 border border-border">
-              <Text className="text-text-secondary text-sm">Loading memories...</Text>
+            <View className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <View key={i} className="bg-surface rounded-2xl p-4 border border-border h-32" />
+              ))}
+            </View>
+          ) : searchQuery ? (
+            <View className="bg-surface rounded-2xl p-8 items-center">
+              <Text className="text-text-secondary text-lg mb-2">No results found</Text>
+              <Text className="text-text-muted text-sm">Try a different search term</Text>
             </View>
           ) : (
-            <View className="bg-surface rounded-xl p-4 border border-border">
-              <Text className="text-text-secondary text-sm">No memories yet. Start capturing!</Text>
+            <View className="bg-surface rounded-2xl p-8 items-center">
+              <Text className="text-text-secondary text-lg mb-2">No memories yet</Text>
+              <Text className="text-text-muted text-sm mb-4">Start capturing your thoughts!</Text>
+              <Button size="sm" leftIcon={<Plus size={16} color="#fff" />} onPress={handleAddMemory}>
+                Add memory
+              </Button>
             </View>
           )
         }

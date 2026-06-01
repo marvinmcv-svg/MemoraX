@@ -18,13 +18,10 @@ import type { AppContext } from './types';
 
 const app = new Hono<AppContext>();
 
-const redis = new Redis({
-  url: 'TODO', // Set via wrangler secrets
-  token: 'TODO',
-});
+const redis = Redis.fromEnv();
 
 const ratelimit = new Ratelimit({
-  redis: Redis.fromEnv(),
+  redis: redis,
   limiter: Ratelimit.slidingWindow(100, '60 s'),
   analytics: true,
 });

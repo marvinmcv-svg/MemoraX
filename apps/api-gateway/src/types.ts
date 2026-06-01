@@ -10,8 +10,11 @@ export interface AppContext {
     BACKEND_URL: string;
     WHATSAPP_APP_SECRET: string;
     WHATSAPP_VERIFY_TOKEN: string;
+    WHATSAPP_ACCESS_TOKEN: string;
+    WHATSAPP_PHONE_ID: string;
     TELEGRAM_BOT_TOKEN: string;
     SLACK_SIGNING_SECRET: string;
+    SLACK_BOT_TOKEN: string;
     UPSTASH_REDIS_REST_URL: string;
     UPSTASH_REDIS_REST_TOKEN: string;
   };

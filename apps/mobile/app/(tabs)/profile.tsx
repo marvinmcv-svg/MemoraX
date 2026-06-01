@@ -1,16 +1,38 @@
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
-import { useUser } from '@clerk/clerk-expo';
+import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { useUser, useAuth } from '@clerk/clerk-expo';
 import { Settings, Bell, Users, CreditCard, LogOut, ChevronRight } from '@expo/vector-icons';
 
 const menuItems = [
-  { icon: Users, label: 'Account', description: 'Manage your account details' },
-  { icon: Bell, label: 'Notifications', description: 'Configure reminder preferences' },
-  { icon: CreditCard, label: 'Billing', description: 'View your plan and usage' },
-  { icon: Settings, label: 'Settings', description: 'App configuration' },
+  { icon: Users, label: 'Account', description: 'Manage your account details', action: 'account' },
+  { icon: Bell, label: 'Notifications', description: 'Configure reminder preferences', action: 'notifications' },
+  { icon: CreditCard, label: 'Billing', description: 'View your plan and usage', action: 'billing' },
+  { icon: Settings, label: 'Settings', description: 'App configuration', action: 'settings' },
 ];
 
 export default function ProfileScreen() {
   const { user } = useUser();
+  const { signOut } = useAuth();
+
+  const handleMenuPress = (action: string) => {
+    console.log(`Menu pressed: ${action}`);
+  };
+
+  const handleSignOut = async () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Sign Out', style: 'destructive', onPress: async () => {
+          try {
+            await signOut();
+          } catch (error) {
+            console.error('Sign out error:', error);
+          }
+        }},
+      ]
+    );
+  };
 
   return (
     <View className="flex-1 bg-background">
@@ -40,6 +62,7 @@ export default function ProfileScreen() {
           {menuItems.map((item) => (
             <TouchableOpacity
               key={item.label}
+              onPress={() => handleMenuPress(item.action)}
               className="bg-surface rounded-xl p-4 flex-row items-center border border-border"
             >
               <View className="w-10 h-10 rounded-xl bg-primary/10 items-center justify-center">
@@ -54,7 +77,10 @@ export default function ProfileScreen() {
           ))}
         </View>
 
-        <TouchableOpacity className="bg-surface rounded-xl p-4 flex-row items-center justify-center border border-border mb-6">
+        <TouchableOpacity
+          onPress={handleSignOut}
+          className="bg-surface rounded-xl p-4 flex-row items-center justify-center border border-border mb-6"
+        >
           <LogOut size={20} color="#EF4444" />
           <Text className="text-red-500 font-medium ml-2">Sign Out</Text>
         </TouchableOpacity>
