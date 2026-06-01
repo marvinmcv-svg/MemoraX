@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Clock, CheckCircle, Coffee, Trash2, Bell, Plus, X, ChevronRight, AlarmClock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, type Reminder } from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
 
 const statusColors: Record<string, string> = {
   pending: '#F59E0B',
@@ -38,13 +39,14 @@ export default function RemindersPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'pending' | 'sent'>('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const { addToast } = useToast();
 
   const fetchReminders = useCallback(async () => {
     try {
       const response = await api.reminders.list();
       setReminders(response.data);
     } catch (error) {
-      console.error('Failed to fetch reminders:', error);
+      addToast('error', 'Failed to load reminders. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -59,7 +61,7 @@ export default function RemindersPage() {
       await api.reminders.snooze(id, 60);
       fetchReminders();
     } catch (error) {
-      console.error('Failed to snooze reminder:', error);
+      addToast('error', 'Failed to snooze reminder. Please try again.');
     }
   };
 
@@ -68,7 +70,7 @@ export default function RemindersPage() {
       await api.reminders.delete(id);
       setReminders(reminders.filter(r => r.id !== id));
     } catch (error) {
-      console.error('Failed to delete reminder:', error);
+      addToast('error', 'Failed to delete reminder. Please try again.');
     }
   };
 

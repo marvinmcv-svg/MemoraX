@@ -1,32 +1,29 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
-import { useState, useEffect, useCallback } from 'react';
-import { Mic, Image, Send, Sparkles, Brain, TrendingUp, Clock } from '@expo/vector-icons';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, RefreshControl, Alert, Animated } from 'react-native';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Mic, Image, Send, Sparkles, Brain, TrendingUp } from '@expo/vector-icons';
+import { router } from 'expo-router';
 import { api, type Memory } from '../../lib/api';
 import { Card, CardHeader } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
 import { MemoryList } from '../../components/ui/MemoryCard';
-
-function formatRelativeTime(dateStr: string): string {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diff = now.getTime() - date.getTime();
-  const minutes = Math.floor(diff / 60000);
-  const hours = Math.floor(diff / 3600000);
-  const days = Math.floor(diff / 86400000);
-
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
 
 export default function HomeScreen() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [quickCapture, setQuickCapture] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const inputRef = useRef<TextInput>(null);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [fadeAnim]);
 
   const fetchMemories = useCallback(async () => {
     try {
@@ -34,6 +31,8 @@ export default function HomeScreen() {
       setMemories(response.data || []);
     } catch (error) {
       console.error('Failed to fetch memories:', error);
+      const message = error instanceof Error ? error.message : 'Failed to fetch memories';
+      Alert.alert('Error', message);
     } finally {
       setLoading(false);
     }
@@ -49,33 +48,40 @@ export default function HomeScreen() {
     setRefreshing(false);
   }, [fetchMemories]);
 
-  const handleSubmitMemory = async () => {
-    if (!quickCapture.trim()) return;
+  const thisWeekCount = memories.filter((m) => {
+    const created = new Date(m.createdAt);
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    return created >= weekAgo;
+  }).length;
 
+  const handleSubmitMemory = useCallback(async () => {
+    if (!quickCapture.trim() || submitting) return;
+
+    setSubmitting(true);
     try {
-      await api.memories.create({ content: quickCapture });
+      await api.memories.create({ content: quickCapture.trim() });
       setQuickCapture('');
-      fetchMemories();
+      await fetchMemories();
     } catch (error) {
       console.error('Failed to create memory:', error);
+      const message = error instanceof Error ? error.message : 'Failed to create memory';
+      Alert.alert('Capture Failed', message);
+    } finally {
+      setSubmitting(false);
     }
-  };
+  }, [quickCapture, submitting, fetchMemories]);
 
-  const handleViewBriefing = () => {
-    console.log('View full briefing pressed');
-  };
+  const handleAddFirstMemory = useCallback(() => {
+    inputRef.current?.focus();
+  }, []);
 
-  const handleAddFirstMemory = () => {
-    setQuickCapture('');
-  };
-
-  const handleImageUpload = () => {
-    console.log('Image upload pressed');
-  };
+  const handleImageUpload = useCallback(() => {
+    Alert.alert('Coming Soon', 'Image upload is coming in a future update.');
+  }, []);
 
   const stats = [
     { label: 'Total Memories', value: String(memories.length), icon: Brain, color: '#6366F1' },
-    { label: 'This Week', value: String(memories.length), icon: TrendingUp, color: '#10B981' },
+    { label: 'This Week', value: String(thisWeekCount), icon: TrendingUp, color: '#10B981' },
     { label: 'Quick Capture', value: 'Active', icon: Sparkles, color: '#F59E0B' },
   ];
 
@@ -102,8 +108,8 @@ export default function HomeScreen() {
         }
       >
         {/* Stats Grid */}
-        <View className="flex-row gap-3 mb-6">
-          {stats.map((stat, i) => (
+        <Animated.View style={{ opacity: fadeAnim }} className="flex-row gap-3 mb-6">
+          {stats.map((stat) => (
             <View
               key={stat.label}
               className="flex-1 bg-surface border border-border rounded-2xl p-4"
@@ -118,7 +124,7 @@ export default function HomeScreen() {
               <Text className="text-xs text-text-muted mt-1">{stat.label}</Text>
             </View>
           ))}
-        </View>
+        </Animated.View>
 
         {/* Daily Briefing Card */}
         <Card variant="elevated" className="mb-6">
@@ -140,8 +146,8 @@ export default function HomeScreen() {
               <Text className="text-text-muted text-sm">No memories yet</Text>
             )}
           </View>
-          <Button variant="secondary" fullWidth onPress={handleViewBriefing}>
-            View full briefing
+          <Button variant="secondary" fullWidth onPress={() => router.push('/(tabs)/reminders' as any)}>
+            View upcoming reminders
           </Button>
         </Card>
 
@@ -159,30 +165,42 @@ export default function HomeScreen() {
 
           <View className="relative">
             <TextInput
+              ref={inputRef}
               value={quickCapture}
               onChangeText={setQuickCapture}
               placeholder="What's on your mind? Try: 'Remind me to call mom tomorrow at 3pm'"
               placeholderTextColor="#64748B"
               multiline
-              className="bg-background rounded-xl p-4 text-text-primary min-h-24 text-sm leading-relaxed"
+              editable={!submitting}
+              className="bg-background rounded-xl p-4 text-text-primary text-sm leading-relaxed"
+              style={{ minHeight: 96 }}
             />
           </View>
 
           <View className="flex-row items-center justify-between mt-4">
             <View className="flex-row gap-2">
               <TouchableOpacity
+                activeOpacity={0.7}
                 onPress={() => setIsRecording(!isRecording)}
                 className={`p-3 rounded-xl ${isRecording ? 'bg-destructive-500' : 'bg-surface-hover'}`}
               >
                 <Mic size={20} color={isRecording ? '#fff' : '#94A3B8'} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={handleImageUpload} className="p-3 rounded-xl bg-surface-hover">
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={handleImageUpload}
+                className="p-3 rounded-xl bg-surface-hover"
+              >
                 <Image size={20} color="#94A3B8" />
               </TouchableOpacity>
             </View>
-            <Button onPress={handleSubmitMemory} disabled={!quickCapture.trim()}>
-              <Send size={18} color="#fff" />
-              <Text className="text-white font-medium ml-2">Capture</Text>
+            <Button
+              onPress={handleSubmitMemory}
+              disabled={!quickCapture.trim() || submitting}
+              loading={submitting}
+              leftIcon={<Send size={18} color="#fff" />}
+            >
+              Capture
             </Button>
           </View>
         </Card>
@@ -190,15 +208,19 @@ export default function HomeScreen() {
         {/* Recent Memories */}
         <View className="flex-row items-center justify-between mb-4">
           <Text className="text-lg font-semibold text-text-primary">Recent Memories</Text>
-          <TouchableOpacity onPress={() => console.log('View all pressed')}>
+          <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/(tabs)/memories' as any)}>
             <Text className="text-sm text-primary-400 font-medium">View all</Text>
           </TouchableOpacity>
         </View>
 
         {loading ? (
-          <View className="space-y-3">
+          <View>
             {[1, 2, 3].map((i) => (
-              <View key={i} className="bg-surface rounded-2xl p-4 border border-border h-32" />
+              <View
+                key={i}
+                className="bg-surface rounded-2xl p-4 border border-border mb-3"
+                style={{ height: 128 }}
+              />
             ))}
           </View>
         ) : memories.length === 0 ? (
@@ -208,15 +230,33 @@ export default function HomeScreen() {
             </View>
             <Text className="text-text-secondary text-lg mb-2">Your memory palace is empty</Text>
             <Text className="text-text-muted text-center mb-4">Capture your first thought using Quick Capture above!</Text>
-            <Button size="sm" onPress={handleAddFirstMemory}>Add your first memory</Button>
+            <Button size="sm" onPress={handleAddFirstMemory}>
+              Start typing
+            </Button>
           </Card>
         ) : (
           <MemoryList
-            memories={memories}
-            onMemoryPress={(memory) => console.log('Memory pressed:', memory.id)}
-            onRemind={(memory) => console.log('Remind:', memory.id)}
-            onArchive={(memory) => console.log('Archive:', memory.id)}
-            onDelete={(memory) => console.log('Delete:', memory.id)}
+            memories={memories.slice(0, 5)}
+            onMemoryPress={(memory) => router.push({ pathname: '/(tabs)/memories' as any })}
+            onRemind={(memory) => Alert.alert('Set Reminder', `Set reminder for: ${memory.content.slice(0, 40)}...`)}
+            onArchive={(memory) => Alert.alert('Archive', `Archive: ${memory.content.slice(0, 40)}...`)}
+            onDelete={(memory) => {
+              Alert.alert('Delete Memory', 'Are you sure?', [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                  text: 'Delete',
+                  style: 'destructive',
+                  onPress: async () => {
+                    try {
+                      await api.memories.delete(memory.id);
+                      await fetchMemories();
+                    } catch (error) {
+                      Alert.alert('Error', 'Failed to delete memory');
+                    }
+                  },
+                },
+              ]);
+            }}
           />
         )}
 

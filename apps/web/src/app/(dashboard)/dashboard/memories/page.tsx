@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Search, Plus, Trash2, Edit3, Clock, Sparkles, X, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api, type Memory } from '@/lib/api';
+import { useToast } from '@/components/ui/Toast';
 
 const intents = {
   reminder: { color: '#F59E0B', label: 'Reminder', icon: Clock },
@@ -46,13 +47,14 @@ export default function MemoriesPage() {
   const [filterIntent, setFilterIntent] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [selectedMemory, setSelectedMemory] = useState<Memory | null>(null);
+  const { addToast } = useToast();
 
   const fetchMemories = useCallback(async () => {
     try {
       const response = await api.memories.list();
       setMemories(response.data);
     } catch (error) {
-      console.error('Failed to fetch memories:', error);
+      addToast('error', 'Failed to load memories. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -67,7 +69,7 @@ export default function MemoriesPage() {
       await api.memories.delete(id);
       setMemories(memories.filter(m => m.id !== id));
     } catch (error) {
-      console.error('Failed to delete memory:', error);
+      addToast('error', 'Failed to delete memory. Please try again.');
     }
   };
 

@@ -7,6 +7,7 @@ import { api, type Memory } from '@/lib/api';
 import { MemoryList } from '@/components/ui/MemoryCard';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { useToast } from '@/components/ui/Toast';
 
 type Intent = 'reminder' | 'note' | 'task' | 'event' | 'serendipity' | 'question' | 'unknown';
 
@@ -37,6 +38,7 @@ export default function SearchPage() {
   const [selectedIntent, setSelectedIntent] = useState<Intent | 'all'>('all');
   const [selectedChannel, setSelectedChannel] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
+  const { addToast } = useToast();
 
   const handleSearch = useCallback(async () => {
     if (!query.trim()) return;
@@ -44,10 +46,10 @@ export default function SearchPage() {
     setLoading(true);
     setSearched(true);
     try {
-      const response = await api.memories.search({ query });
+      const response = await api.memories.search(query);
       setResults(response.data || []);
     } catch (error) {
-      console.error('Search failed:', error);
+      addToast('error', 'Search failed. Please try again.');
       setResults([]);
     } finally {
       setLoading(false);

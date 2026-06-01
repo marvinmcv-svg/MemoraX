@@ -9,21 +9,34 @@ interface ApiOptions {
 
 async function apiRequest<T>(path: string, options: ApiOptions = {}): Promise<T> {
   const { method = 'GET', body, headers = {} } = options;
+  const maxRetries = 3;
+  let lastError: Error | null = null;
 
-  const res = await fetch(`${API_URL}${path}`, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      ...headers,
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch(`${API_URL}${path}`, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...headers,
+        },
+        body: body ? JSON.stringify(body) : undefined,
+      });
 
-  if (!res.ok) {
-    throw new Error(`API error: ${res.status} ${res.statusText}`);
+      if (!res.ok) {
+        throw new Error(`API error: ${res.status} ${res.statusText}`);
+      }
+
+      return res.json();
+    } catch (error) {
+      lastError = error as Error;
+      if (attempt < maxRetries) {
+        await new Promise(r => setTimeout(r, 1000 * attempt));
+      }
+    }
   }
 
-  return res.json();
+  throw lastError || new Error('Request failed');
 }
 
 export interface Memory {

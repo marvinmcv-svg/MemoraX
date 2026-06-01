@@ -18,9 +18,12 @@ const intents = {
   unknown: { color: '#64748B', label: 'Memory' },
 };
 
+import { useToast } from '@/components/ui/Toast';
+
 export default function DashboardPage() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [loading, setLoading] = useState(true);
+  const { addToast } = useToast();
 
   const fetchMemories = useCallback(async () => {
     try {
@@ -28,10 +31,11 @@ export default function DashboardPage() {
       setMemories(response.data.slice(0, 5));
     } catch (error) {
       console.error('Failed to fetch memories:', error);
+      addToast('error', 'Failed to load memories. Please try again.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [addToast]);
 
   useEffect(() => {
     fetchMemories();

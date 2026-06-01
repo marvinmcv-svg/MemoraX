@@ -2,9 +2,10 @@
 
 import { useState, useCallback } from 'react';
 import { Send, Mic, Sparkles, X } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
+import { useToast } from '@/components/ui/Toast';
 
 interface QuickCaptureProps {
   onSuccess?: () => void;
@@ -15,6 +16,7 @@ export function QuickCapture({ onSuccess }: QuickCaptureProps) {
   const [submitting, setSubmitting] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const { addToast } = useToast();
 
   const handleSubmit = useCallback(async () => {
     if (!content.trim() || submitting) return;
@@ -25,13 +27,15 @@ export function QuickCapture({ onSuccess }: QuickCaptureProps) {
       setContent('');
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 2000);
+      addToast('success', 'Memory captured successfully!');
       onSuccess?.();
     } catch (error) {
       console.error('Failed to create memory:', error);
+      addToast('error', 'Failed to capture memory. Please try again.');
     } finally {
       setSubmitting(false);
     }
-  }, [content, submitting, onSuccess]);
+  }, [content, submitting, onSuccess, addToast]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {

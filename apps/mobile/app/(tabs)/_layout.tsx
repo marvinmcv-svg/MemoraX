@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Home, Hash, Clock, User } from '@expo/vector-icons';
+import { Home, Hash, Search, Clock, User } from '@expo/vector-icons';
 
 export default function TabLayout() {
   return (
@@ -34,6 +34,13 @@ export default function TabLayout() {
         options={{
           title: 'Memories',
           tabBarIcon: ({ color }) => <Hash size={24} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="search"
+        options={{
+          title: 'Search',
+          tabBarIcon: ({ color }) => <Search size={24} color={color} />,
         }}
       />
       <Tabs.Screen

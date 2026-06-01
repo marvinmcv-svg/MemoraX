@@ -1,6 +1,6 @@
-import { View, Text, FlatList, TouchableOpacity, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, RefreshControl, Alert } from 'react-native';
 import { useState, useEffect, useCallback } from 'react';
-import { Clock, CheckCircle, Bell, BellOff } from '@expo/vector-icons';
+import { Clock, CheckCircle, Bell, BellOff, Trash2 } from '@expo/vector-icons';
 import { api, type Reminder } from '../../lib/api';
 import { Card } from '../../components/ui/Card';
 import { Button } from '../../components/ui/Button';
@@ -37,11 +37,18 @@ function formatFullDate(dateStr: string): string {
   });
 }
 
+const snoozeOptions = [
+  { label: '15 minutes', minutes: 15 },
+  { label: '1 hour', minutes: 60 },
+  { label: '1 day', minutes: 60 * 24 },
+];
+
 export default function RemindersScreen() {
   const [reminders, setReminders] = useState<Reminder[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filter, setFilter] = useState<'all' | 'pending' | 'sent'>('all');
+  const [snoozingId, setSnoozingId] = useState<string | null>(null);
 
   const fetchReminders = useCallback(async () => {
     try {
@@ -49,6 +56,7 @@ export default function RemindersScreen() {
       setReminders(response.data || []);
     } catch (error) {
       console.error('Failed to fetch reminders:', error);
+      Alert.alert('Error', 'Failed to load reminders. Please try again.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -71,9 +79,53 @@ export default function RemindersScreen() {
 
   const pendingCount = reminders.filter((r) => r.status === 'pending').length;
 
-  const handleSnooze = (reminderId: string) => {
-    console.log('Snooze reminder:', reminderId);
-  };
+  const handleSnooze = useCallback((reminderId: string) => {
+    Alert.alert(
+      'Snooze Reminder',
+      'Snooze for how long?',
+      [
+        ...snoozeOptions.map((opt) => ({
+          text: opt.label,
+          onPress: async () => {
+            setSnoozingId(reminderId);
+            try {
+              await api.reminders.snooze(reminderId, opt.minutes);
+              await fetchReminders();
+            } catch (error) {
+              console.error('Failed to snooze reminder:', error);
+              Alert.alert('Error', 'Failed to snooze reminder. Please try again.');
+            } finally {
+              setSnoozingId(null);
+            }
+          },
+        })),
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  }, [fetchReminders]);
+
+  const handleDelete = useCallback(async (reminderId: string) => {
+    Alert.alert(
+      'Delete Reminder',
+      'Are you sure you want to delete this reminder?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.reminders.delete(reminderId);
+              await fetchReminders();
+            } catch (error) {
+              console.error('Failed to delete reminder:', error);
+              Alert.alert('Error', 'Failed to delete reminder. Please try again.');
+            }
+          },
+        },
+      ]
+    );
+  }, [fetchReminders]);
 
   return (
     <View className="flex-1 bg-background-base">
@@ -92,6 +144,7 @@ export default function RemindersScreen() {
             <TouchableOpacity
               key={f}
               onPress={() => setFilter(f)}
+              activeOpacity={0.7}
               className={`flex-1 px-4 py-2.5 rounded-xl ${
                 filter === f ? 'bg-primary-500' : 'bg-transparent'
               }`}
@@ -119,6 +172,7 @@ export default function RemindersScreen() {
         renderItem={({ item }) => {
           const config = statusConfig[item.status] || statusConfig.pending;
           const StatusIcon = config.icon;
+          const isSnoozing = snoozingId === item.id;
 
           return (
             <Card variant="interactive" className="mb-3">
@@ -137,8 +191,20 @@ export default function RemindersScreen() {
                   </View>
                   {item.status === 'pending' && (
                     <View className="flex-row gap-2">
-                      <TouchableOpacity onPress={() => handleSnooze(item.id)} className="p-2 rounded-lg bg-surface-hover">
+                      <TouchableOpacity
+                        onPress={() => handleSnooze(item.id)}
+                        disabled={isSnoozing}
+                        activeOpacity={0.7}
+                        className="p-2 rounded-lg bg-surface-hover"
+                      >
                         <Clock size={16} color="#94A3B8" />
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        onPress={() => handleDelete(item.id)}
+                        activeOpacity={0.7}
+                        className="p-2 rounded-lg bg-surface-hover"
+                      >
+                        <Trash2 size={16} color="#EF4444" />
                       </TouchableOpacity>
                     </View>
                   )}
@@ -167,9 +233,13 @@ export default function RemindersScreen() {
         }}
         ListEmptyComponent={
           loading ? (
-            <View className="space-y-3">
+            <View>
               {[1, 2, 3].map((i) => (
-                <View key={i} className="bg-surface rounded-2xl h-32 border border-border" />
+                <View
+                  key={i}
+                  className="bg-surface rounded-2xl border border-border mb-3"
+                  style={{ height: 128 }}
+                />
               ))}
             </View>
           ) : (
