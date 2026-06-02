@@ -48,6 +48,7 @@ export interface Memory {
   sourceChannel: string | null;
   createdAt: string;
   updatedAt: string;
+  metadata?: Record<string, unknown> | null;
 }
 
 export interface Reminder {
@@ -127,8 +128,10 @@ export const api = {
 
   kg: {
     stats: () => apiRequest<{ entities: number; relationships: number; types: string[] }>('/api/v1/kg/stats'),
-    entities: (params?: { type?: string; value?: string }) =>
-      apiRequest<{ data: unknown[]; count: number }>('/api/v1/kg/entities', { ...(params || {}) }),
+    entities: (params?: { type?: string; value?: string }) => {
+      const qs = params ? `?${new URLSearchParams(params as Record<string, string>).toString()}` : '';
+      return apiRequest<{ data: unknown[]; count: number }>(`/api/v1/kg/entities${qs}`);
+    },
     search: (q: string) => apiRequest<{ query: string; results: unknown[]; total: number }>(`/api/v1/kg/search?q=${encodeURIComponent(q)}`),
     discover: () => apiRequest<{ memories: unknown[]; count: number }>('/api/v1/serendipity/discover'),
     recordMemory: (memory: { id: string; content: string; intent: string; sourceChannel: string | null; createdAt: string }) =>
@@ -151,7 +154,7 @@ export const api = {
   apiKeys: {
     list: () => apiRequest<{ data: unknown[] }>('/api/v1/api-keys'),
     create: (data: { name: string; permissions?: string[] }) =>
-      apiRequest<{ key: string; name: string; createdAt: string }>('/api/v1/api-keys', { method: 'POST', body: data }),
+      apiRequest<{ id: string; name: string; key: string; permissions: string[]; createdAt: string; lastUsed: string | null }>('/api/v1/api-keys', { method: 'POST', body: data }),
     revoke: (id: string) =>
       apiRequest<{ success: boolean }>(`/api/v1/api-keys/${id}`, { method: 'DELETE' }),
   },

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Brain, TrendingUp, Sparkles, ArrowRight, Hash, Plus, Bell, X } from 'lucide-react';
 import { api, type Memory, type Reminder } from '@/lib/api';
@@ -19,7 +20,7 @@ export default function DashboardPage() {
   const [memories, setMemories] = useState<Memory[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [remindModal, setRemindModal] = useState<{ memory: Memory; remindAt: string } | null(null);
+  const [remindModal, setRemindModal] = useState<{ memory: Memory; remindAt: string } | null>(null);
   const [submittingRemind, setSubmittingRemind] = useState(false);
   const { addToast } = useToast();
 
@@ -191,9 +192,11 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              <Button variant="secondary" fullWidth rightIcon={<ArrowRight className="w-4 h-4" />}>
-                View full briefing
-              </Button>
+              <Link href="/dashboard/discover">
+                <Button variant="secondary" fullWidth rightIcon={<ArrowRight className="w-4 h-4" />}>
+                  View full briefing
+                </Button>
+              </Link>
             </div>
           </Card>
         </motion.div>
@@ -206,9 +209,11 @@ export default function DashboardPage() {
             <Hash className="w-5 h-5 text-primary-400" />
             Recent Memories
           </h2>
-          <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-4 h-4" />}>
-            View all
-          </Button>
+          <Link href="/dashboard/memories">
+            <Button variant="ghost" size="sm" rightIcon={<ArrowRight className="w-4 h-4" />}>
+              View all
+            </Button>
+          </Link>
         </div>
 
         <AnimatePresence mode="wait">

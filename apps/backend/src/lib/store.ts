@@ -1,11 +1,13 @@
 import { v4 as uuid } from 'uuid';
-import type { Memory, Reminder, UserChannel, Workspace, Briefing } from '../types';
+import { randomBytes } from 'crypto';
+import type { Memory, Reminder, UserChannel, Workspace, Briefing, ApiKey } from '../types';
 
 const memories: Memory[] = [];
 const reminders: Reminder[] = [];
 const channels: UserChannel[] = [];
 const workspaces: Workspace[] = [];
 const briefings: Briefing[] = [];
+const apiKeys: ApiKey[] = [];
 
 export const __resetStoreForTesting = (): void => {
   memories.length = 0;
@@ -13,6 +15,12 @@ export const __resetStoreForTesting = (): void => {
   channels.length = 0;
   workspaces.length = 0;
   briefings.length = 0;
+  apiKeys.length = 0;
+};
+
+export const generateApiKey = (): { key: string; prefix: string } => {
+  const raw = randomBytes(32).toString('hex');
+  return { key: `mxa_${raw}`, prefix: `mxa_${raw.slice(0, 8)}` };
 };
 
 export const memoryStore = {
@@ -165,4 +173,41 @@ export const briefingStore = {
       .filter(b => b.userId === userId)
       .sort((a, b) => b.generatedAt.getTime() - a.generatedAt.getTime())[0];
   }
+};
+
+export const apiKeyStore = {
+  create: (data: { userId: string; name: string; permissions?: string[] }): ApiKey => {
+    const { key, prefix } = generateApiKey();
+    const apiKey: ApiKey = {
+      id: uuid(),
+      userId: data.userId,
+      name: data.name,
+      key,
+      prefix,
+      permissions: data.permissions ?? ['read', 'write'],
+      lastUsed: null,
+      createdAt: new Date(),
+    };
+    apiKeys.push(apiKey);
+    return apiKey;
+  },
+
+  findByUser: (userId: string): ApiKey[] => {
+    return apiKeys
+      .filter(k => k.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  },
+
+  findById: (id: string, userId: string): ApiKey | undefined => {
+    return apiKeys.find(k => k.id === id && k.userId === userId);
+  },
+
+  delete: (id: string, userId: string): boolean => {
+    const index = apiKeys.findIndex(k => k.id === id && k.userId === userId);
+    if (index > -1) {
+      apiKeys.splice(index, 1);
+      return true;
+    }
+    return false;
+  },
 };

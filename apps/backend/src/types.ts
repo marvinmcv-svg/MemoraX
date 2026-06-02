@@ -53,3 +53,14 @@ export interface Briefing {
   memoriesCount: number;
   remindersCount: number;
 }
+
+export interface ApiKey {
+  id: string;
+  userId: string;
+  name: string;
+  key: string;
+  prefix: string;
+  permissions: string[];
+  lastUsed: Date | null;
+  createdAt: Date;
+}

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Key, Plus, Trash2, Copy, Check, Code, ExternalLink, Shield } from 'lucide-react';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 
 interface ApiKey {

@@ -1,7 +1,12 @@
 import { redirect } from 'next/navigation';
-import { auth } from '@clerk/nextjs/server';
+import { isClerkConfigured } from '@/lib/clerk-config';
 
 export default async function HomePage() {
+  if (!isClerkConfigured()) {
+    redirect('/dashboard');
+  }
+
+  const { auth } = await import('@clerk/nextjs/server');
   const { userId } = await auth();
 
   if (userId) {

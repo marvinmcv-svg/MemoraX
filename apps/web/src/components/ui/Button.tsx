@@ -69,7 +69,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ) : leftIcon ? (
           <span className="flex-shrink-0">{leftIcon}</span>
         ) : null}
-        {children}
+        {children as React.ReactNode}
         {!loading && rightIcon && <span className="flex-shrink-0">{rightIcon}</span>}
       </motion.button>
     );

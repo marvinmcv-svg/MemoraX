@@ -4,6 +4,7 @@ import { memoryRoutes } from './routes/memories';
 import { reminderRoutes } from './routes/reminders';
 import { channelRoutes } from './routes/channels';
 import { workspaceRoutes } from './routes/workspaces';
+import { apiKeyRoutes } from './routes/api-keys';
 import { aiRoutes } from './routes/ai';
 import { briefingRoutes } from './routes/briefing';
 import { captureRoutes } from './routes/capture';
@@ -25,11 +26,12 @@ app.use('/webhooks', webhookRoutes);
 
 app.use('/api/v1/capture', captureRoutes);
 
-const auth = authMiddleware();
+const auth = authMiddleware;
 app.use('/api/v1/memories', auth, memoryRoutes);
 app.use('/api/v1/reminders', auth, reminderRoutes);
 app.use('/api/v1/channels', auth, channelRoutes);
 app.use('/api/v1/workspaces', auth, workspaceRoutes);
+app.use('/api/v1/api-keys', auth, apiKeyRoutes);
 app.use('/api/v1/ai', auth, aiRoutes);
 app.use('/api/v1/briefing', auth, briefingRoutes);
 app.use('/api/v1/kg', auth, kgRoutes);

@@ -4,6 +4,7 @@ import { memoryRoutes } from '../routes/memories';
 import { reminderRoutes } from '../routes/reminders';
 import { channelRoutes } from '../routes/channels';
 import { workspaceRoutes } from '../routes/workspaces';
+import { apiKeyRoutes } from '../routes/api-keys';
 import { aiRoutes } from '../routes/ai';
 import { briefingRoutes } from '../routes/briefing';
 import { captureRoutes } from '../routes/capture';
@@ -34,6 +35,7 @@ export function createTestApp(): Express {
   app.use('/api/v1/reminders', reminderRoutes);
   app.use('/api/v1/channels', channelRoutes);
   app.use('/api/v1/workspaces', workspaceRoutes);
+  app.use('/api/v1/api-keys', apiKeyRoutes);
   app.use('/api/v1/ai', aiRoutes);
   app.use('/api/v1/briefing', briefingRoutes);
   app.use('/api/v1/kg', kgRoutes);

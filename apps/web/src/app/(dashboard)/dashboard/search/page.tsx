@@ -47,7 +47,7 @@ export default function SearchPage() {
     setSearched(true);
     try {
       const response = await api.memories.search(query);
-      setResults(response.data || []);
+      setResults((response.data || []).map((r) => r.memory));
     } catch (error) {
       addToast('error', 'Search failed. Please try again.');
       setResults([]);
