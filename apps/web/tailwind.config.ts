@@ -6,6 +6,7 @@ const config: Config = {
     extend: {
       colors: {
         background: {
+          DEFAULT: '#0A0A0F',
           base: '#0A0A0F',
           elevated: '#12121A',
           hover: '#1A1A24',
@@ -19,7 +20,8 @@ const config: Config = {
           focus: '#6366F1',
         },
         primary: {
-50: '#EEF2FF',
+          DEFAULT: '#6366F1',
+          50: '#EEF2FF',
           100: '#E0E7FF',
           200: '#C7D2FE',
           300: '#A5B4FC',

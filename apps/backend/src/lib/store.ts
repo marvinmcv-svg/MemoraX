@@ -7,6 +7,14 @@ const channels: UserChannel[] = [];
 const workspaces: Workspace[] = [];
 const briefings: Briefing[] = [];
 
+export const __resetStoreForTesting = (): void => {
+  memories.length = 0;
+  reminders.length = 0;
+  channels.length = 0;
+  workspaces.length = 0;
+  briefings.length = 0;
+};
+
 export const memoryStore = {
   create: (data: Omit<Memory, 'id' | 'createdAt' | 'updatedAt'>): Memory => {
     const memory: Memory = {
