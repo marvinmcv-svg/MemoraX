@@ -10,6 +10,7 @@ import { captureRoutes } from './routes/capture';
 import { webhookRoutes } from './routes/webhooks';
 import { kgRoutes } from './routes/knowledge-graph';
 import { serendipityRoutes } from './routes/serendipity';
+import { authMiddleware } from './middleware/auth';
 import { knowledgeGraph } from './lib/knowledge-graph';
 import { startScheduler } from './services/scheduler';
 
@@ -24,14 +25,15 @@ app.use('/webhooks', webhookRoutes);
 
 app.use('/api/v1/capture', captureRoutes);
 
-app.use('/api/v1/memories', memoryRoutes);
-app.use('/api/v1/reminders', reminderRoutes);
-app.use('/api/v1/channels', channelRoutes);
-app.use('/api/v1/workspaces', workspaceRoutes);
-app.use('/api/v1/ai', aiRoutes);
-app.use('/api/v1/briefing', briefingRoutes);
-app.use('/api/v1/kg', kgRoutes);
-app.use('/api/v1/serendipity', serendipityRoutes);
+const auth = authMiddleware();
+app.use('/api/v1/memories', auth, memoryRoutes);
+app.use('/api/v1/reminders', auth, reminderRoutes);
+app.use('/api/v1/channels', auth, channelRoutes);
+app.use('/api/v1/workspaces', auth, workspaceRoutes);
+app.use('/api/v1/ai', auth, aiRoutes);
+app.use('/api/v1/briefing', auth, briefingRoutes);
+app.use('/api/v1/kg', auth, kgRoutes);
+app.use('/api/v1/serendipity', auth, serendipityRoutes);
 
 app.get('/health', (req, res) => {
   const dbConnected = !!process.env.DATABASE_URL;
