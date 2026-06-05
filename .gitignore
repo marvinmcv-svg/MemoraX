@@ -48,3 +48,14 @@ apps/mobile/dist/
 
 # Cloudflare
 apps/api-gateway/.wrangler/
+
+# TypeScript incremental build info
+*.tsbuildinfo
+
+# Vendored third-party tools (not part of MemoraX)
+/hermes-agent/
+/hermes-webui/
+/Family Farm/
+/install.ps1
+/hermes.bat
+/.docker/
