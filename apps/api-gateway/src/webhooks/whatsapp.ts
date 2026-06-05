@@ -16,6 +16,11 @@ export async function verifyWhatsAppSignature(c: Context<AppContext>, next: () =
     return c.text(challenge || 'ok');
   }
 
+  // Fail closed: refuse all signed webhooks if the app secret is unconfigured.
+  if (!WHATSAPP_APP_SECRET) {
+    return c.json({ error: 'WhatsApp app secret not configured' }, 503);
+  }
+
   const signature = c.req.header('x-hub-signature-256');
   if (!signature) {
     return c.json({ error: 'Missing signature' }, 401);

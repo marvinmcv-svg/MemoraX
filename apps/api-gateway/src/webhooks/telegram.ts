@@ -5,15 +5,16 @@ import { logWebhook } from '../lib/log';
 export function verifyTelegramSecret(
   provided: string,
   configured: string
-): boolean {
-  if (!configured) return true;
-  if (!provided) return false;
-  if (provided.length !== configured.length) return false;
+): { ok: boolean; reason?: 'unconfigured' | 'missing' | 'mismatch' } {
+  // Fail closed: if no secret is configured, do NOT accept requests.
+  if (!configured) return { ok: false, reason: 'unconfigured' };
+  if (!provided) return { ok: false, reason: 'missing' };
+  if (provided.length !== configured.length) return { ok: false, reason: 'mismatch' };
   let mismatch = 0;
   for (let i = 0; i < provided.length; i++) {
     mismatch |= provided.charCodeAt(i) ^ configured.charCodeAt(i);
   }
-  return mismatch === 0;
+  return mismatch === 0 ? { ok: true } : { ok: false, reason: 'mismatch' };
 }
 
 async function verifyTelegramToken(token: string): Promise<boolean> {
@@ -33,7 +34,11 @@ export async function handleTelegramUpdate(c: Context<AppContext>) {
   const TELEGRAM_SECRET_TOKEN = c.env.TELEGRAM_SECRET_TOKEN || '';
   const provided = c.req.header('X-Telegram-Bot-Api-Secret-Token') || '';
 
-  if (!verifyTelegramSecret(provided, TELEGRAM_SECRET_TOKEN)) {
+  const telegramSecretCheck = verifyTelegramSecret(provided, TELEGRAM_SECRET_TOKEN);
+  if (!telegramSecretCheck.ok) {
+    if (telegramSecretCheck.reason === 'unconfigured') {
+      return c.json({ error: 'Telegram secret token not configured' }, 503);
+    }
     return c.json({ error: 'Invalid secret token' }, 401);
   }
 
