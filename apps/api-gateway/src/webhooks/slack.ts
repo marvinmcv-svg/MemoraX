@@ -1,19 +1,28 @@
 import { Context } from 'hono';
 import type { AppContext } from '../types';
+import { logWebhook } from '../lib/log';
 
-function verifySlackSignature(body: string, timestamp: string, signature: string, secret: string): boolean {
+export async function verifySlackSignature(
+  body: string,
+  timestamp: string,
+  signature: string,
+  secret: string
+): Promise<boolean> {
+  if (!secret || !timestamp || !signature) return false;
   const baseString = `v0:${timestamp}:${body}`;
-  const mySignature =
-    'v0=' +
-    Array.from(
-      new Uint8Array(
-        new TextEncoder().encode(baseString)
-      )
-    )
-      .map((b) => b.toString(16).padStart(2, '0'))
-      .join('');
-
-  return mySignature === signature;
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(secret),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(baseString));
+  const hex = Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+  return `v0=${hex}` === signature;
 }
 
 export async function handleSlackWebhook(c: Context<AppContext>) {
@@ -23,11 +32,19 @@ export async function handleSlackWebhook(c: Context<AppContext>) {
 
   const body = await c.req.text();
 
+  if (!SLACK_SIGNING_SECRET) {
+    return c.json({ error: 'Slack signing secret not configured' }, 503);
+  }
+
+  if (!timestamp || !signature) {
+    return c.json({ error: 'Missing Slack signature headers' }, 401);
+  }
+
   if (Date.now() / 1000 - Number(timestamp) > 300) {
     return c.json({ error: 'Request too old' }, 400);
   }
 
-  if (!verifySlackSignature(body, timestamp, signature, SLACK_SIGNING_SECRET)) {
+  if (!(await verifySlackSignature(body, timestamp, signature, SLACK_SIGNING_SECRET))) {
     return c.json({ error: 'Invalid signature' }, 401);
   }
 
@@ -38,7 +55,7 @@ export async function handleSlackWebhook(c: Context<AppContext>) {
   }
 
   const event = data.event;
-  if (!event || event.type === 'message' && event.subtype !== 'bot_message') {
+  if (!event || (event.type === 'message' && event.subtype !== 'bot_message')) {
     return c.json({ status: 'ok' });
   }
 
@@ -49,7 +66,8 @@ export async function handleSlackWebhook(c: Context<AppContext>) {
     return c.json({ status: 'ok' });
   }
 
-  console.log(`Slack message from ${userId}: ${content}`);
+  logWebhook('slack', userId, content);
+  console.log(`[slack] msg=${event.event_ts || event.ts || 'n/a'} len=${content.length}`);
 
   await fetch(`${c.env.BACKEND_URL}/api/v1/capture`, {
     method: 'POST',

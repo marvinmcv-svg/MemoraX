@@ -16,6 +16,8 @@ import { workspaceRoutes } from './routes/workspaces';
 import { aiRoutes } from './routes/ai';
 import type { AppContext } from './types';
 
+let warnedMissingClerkSecret = false;
+
 const app = new Hono<AppContext>();
 
 const redis = Redis.fromEnv();
@@ -44,7 +46,26 @@ app.use('/api/*', async (c, next) => {
   const authHeader = c.req.header('Authorization');
   if (authHeader?.startsWith('Bearer ')) {
     const token = authHeader.slice(7);
-    c.set('authToken', token);
+
+    if (!c.env.CLERK_SECRET_KEY) {
+      if (!warnedMissingClerkSecret) {
+        console.warn(
+          '[auth] CLERK_SECRET_KEY is not set. Gateway cannot verify Clerk tokens; the backend will 401 unauthenticated requests.'
+        );
+        warnedMissingClerkSecret = true;
+      }
+    } else {
+      try {
+        const payload = await verifyToken(token, {
+          secretKey: c.env.CLERK_SECRET_KEY,
+          issuer: null,
+        });
+        c.set('authToken', token);
+        c.set('userId', payload.sub);
+      } catch (err) {
+        console.warn('Clerk token verification failed in gateway:', String(err));
+      }
+    }
   }
 
   await next();

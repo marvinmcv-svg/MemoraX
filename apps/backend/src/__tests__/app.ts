@@ -11,14 +11,40 @@ import { captureRoutes } from '../routes/capture';
 import { webhookRoutes } from '../routes/webhooks';
 import { kgRoutes } from '../routes/knowledge-graph';
 import { serendipityRoutes } from '../routes/serendipity';
+import { channelAuthMiddleware } from '../middleware/channel-auth';
 import { __resetStoreForTesting } from '../lib/store';
 
-export function createTestApp(): Express {
+export interface TestAppOptions {
+  allowedOrigins?: string[];
+}
+
+export function createTestApp(options: TestAppOptions = {}): Express {
   __resetStoreForTesting();
 
+  const allowedOrigins = options.allowedOrigins ?? [
+    'http://localhost:3000',
+    'http://localhost:3001',
+  ];
+
   const app: Express = express();
-  app.use(cors());
-  app.use(express.json({ limit: '10mb' }));
+  app.use(
+    cors({
+      origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.includes(origin)) return callback(null, true);
+        return callback(new Error('CORS: origin not allowed'));
+      },
+      credentials: true,
+    })
+  );
+  app.use(
+    express.json({
+      limit: '10mb',
+      verify: (req: Request, _res: Response, buf: Buffer) => {
+        (req as any).rawBody = Buffer.from(buf);
+      },
+    })
+  );
   app.use(express.urlencoded({ extended: true }));
 
   app.use((req: Request, _res: Response, next: NextFunction) => {
@@ -30,7 +56,7 @@ export function createTestApp(): Express {
   });
 
   app.use('/webhooks', webhookRoutes);
-  app.use('/api/v1/capture', captureRoutes);
+  app.use('/api/v1/capture', channelAuthMiddleware, captureRoutes);
   app.use('/api/v1/memories', memoryRoutes);
   app.use('/api/v1/reminders', reminderRoutes);
   app.use('/api/v1/channels', channelRoutes);
@@ -50,7 +76,11 @@ export function createTestApp(): Express {
   });
 
   app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
-    console.error('Error:', err);
+    const message = err?.message || 'Internal Server Error';
+    if (message.startsWith('CORS:')) {
+      res.status(403).json({ error: message });
+      return;
+    }
     res.status(500).json({ error: 'Internal Server Error' });
   });
 

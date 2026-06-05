@@ -1,12 +1,27 @@
 import { Context } from 'hono';
 import type { AppContext } from '../types';
+import { logWebhook } from '../lib/log';
+
+export function verifyTelegramSecret(
+  provided: string,
+  configured: string
+): boolean {
+  if (!configured) return true;
+  if (!provided) return false;
+  if (provided.length !== configured.length) return false;
+  let mismatch = 0;
+  for (let i = 0; i < provided.length; i++) {
+    mismatch |= provided.charCodeAt(i) ^ configured.charCodeAt(i);
+  }
+  return mismatch === 0;
+}
 
 async function verifyTelegramToken(token: string): Promise<boolean> {
   try {
     const res = await fetch(`https://api.telegram.org/bot${token}/getMe`, {
       method: 'GET',
     });
-    const data = await res.json() as { ok?: boolean };
+    const data = (await res.json()) as { ok?: boolean };
     return data.ok === true;
   } catch {
     return false;
@@ -15,6 +30,13 @@ async function verifyTelegramToken(token: string): Promise<boolean> {
 
 export async function handleTelegramUpdate(c: Context<AppContext>) {
   const TELEGRAM_BOT_TOKEN = c.env.TELEGRAM_BOT_TOKEN || '';
+  const TELEGRAM_SECRET_TOKEN = c.env.TELEGRAM_SECRET_TOKEN || '';
+  const provided = c.req.header('X-Telegram-Bot-Api-Secret-Token') || '';
+
+  if (!verifyTelegramSecret(provided, TELEGRAM_SECRET_TOKEN)) {
+    return c.json({ error: 'Invalid secret token' }, 401);
+  }
+
   const body = await c.req.json();
 
   const message = body.message || body.edited_message || body.callback_query?.message;
@@ -36,7 +58,8 @@ export async function handleTelegramUpdate(c: Context<AppContext>) {
     }
   }
 
-  console.log(`Telegram message from ${chatId}: ${content}`);
+  logWebhook('telegram', String(chatId), content);
+  console.log(`[telegram] msg=${message.message_id ?? 'n/a'} len=${content.length}`);
 
   await fetch(`${c.env.BACKEND_URL}/api/v1/capture`, {
     method: 'POST',

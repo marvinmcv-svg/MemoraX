@@ -1,9 +1,8 @@
-import { Router, Request, Response, Router as ExpressRouter } from 'express';
+import { Router, Request, Response } from 'express';
 import { memoryStore } from '../lib/store';
 import { knowledgeGraph } from '../lib/knowledge-graph';
 import { aiPipeline } from '../services/ai-pipeline';
-import { v4 as uuid } from 'uuid';
-import type { ContentType, IntentType, ChannelType } from '../types';
+import type { ContentType, ChannelType } from '../types';
 
 const captureRoutes: Router = Router();
 
@@ -19,7 +18,17 @@ captureRoutes.post('/', async (req: Request, res: Response) => {
       return res.status(200).json({ success: true, message: 'No content to capture' });
     }
 
-    const userId = `channel-${channel}-${channelUserId}`;
+    const channelVerified = (req as any).channelVerified === true;
+    const authedUserId = (req as any).userId as string | undefined;
+
+    let userId: string;
+    if (channelVerified) {
+      userId = `channel-${channel}-${channelUserId}`;
+    } else if (typeof authedUserId === 'string' && authedUserId.length > 0) {
+      userId = authedUserId;
+    } else {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
 
     const memory = await memoryStore.create({
       userId,

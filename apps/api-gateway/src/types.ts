@@ -13,8 +13,11 @@ export interface AppContext {
     WHATSAPP_ACCESS_TOKEN: string;
     WHATSAPP_PHONE_ID: string;
     TELEGRAM_BOT_TOKEN: string;
+    TELEGRAM_SECRET_TOKEN: string;
     SLACK_SIGNING_SECRET: string;
     SLACK_BOT_TOKEN: string;
+    TWILIO_AUTH_TOKEN: string;
+    CLERK_SECRET_KEY: string;
     UPSTASH_REDIS_REST_URL: string;
     UPSTASH_REDIS_REST_TOKEN: string;
   };

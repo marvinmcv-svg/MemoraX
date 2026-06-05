@@ -1,5 +1,6 @@
 import { Context } from 'hono';
 import type { AppContext } from '../types';
+import { logWebhook } from '../lib/log';
 
 export async function handleEmailWebhook(c: Context<AppContext>) {
   const body = await c.req.json();
@@ -12,7 +13,8 @@ export async function handleEmailWebhook(c: Context<AppContext>) {
     return c.json({ status: 'ok' });
   }
 
-  console.log(`Email from ${from}: ${subject}`);
+  logWebhook('email', from, subject || '(no subject)');
+  console.log(`[email] msg=${(body.MessageID || body['Message-Id'] || body.messageId) || 'n/a'} len=${content?.length ?? 0}`);
 
   const fullContent = subject ? `[Subject: ${subject}]\n${content}` : content;
 

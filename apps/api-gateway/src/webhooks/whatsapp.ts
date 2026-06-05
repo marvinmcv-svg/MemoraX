@@ -1,5 +1,6 @@
 import { Context } from 'hono';
 import type { AppContext } from '../types';
+import { logWebhook, redactPII } from '../lib/log';
 
 const seenMessages = new Set<string>();
 
@@ -86,7 +87,7 @@ export async function handleWhatsAppWebhook(c: Context<AppContext>) {
             contentType = 'document';
             content = message.document?.caption || message.document?.filename || '';
           } else {
-            console.log(`Skipping unsupported message type: ${msgType} from ${from}`);
+            console.log(`Skipping unsupported message type: ${msgType} from ${redactPII(from)}`);
             continue;
           }
 
@@ -100,7 +101,8 @@ export async function handleWhatsAppWebhook(c: Context<AppContext>) {
             seenMessages.clear();
           }
 
-          console.log(`WhatsApp ${msgType} from ${from}: ${content}`);
+          logWebhook('whatsapp', from, content || `[${msgType}]`);
+          console.log(`[whatsapp] msg=${messageId} len=${content?.length ?? 0}`);
 
           try {
             const captureRes = await fetch(`${c.env.BACKEND_URL}/api/v1/capture`, {
