@@ -114,6 +114,10 @@ export async function channelAuthMiddleware(
     process.env.NODE_ENV === 'development' &&
     process.env.CHANNEL_BYPASS === 'true'
   ) {
+    // Dev bypass: pretend the request is a verified channel so the
+    // capture route synthesizes userId from the body. Production must
+    // NEVER set CHANNEL_BYPASS=true.
+    (req as any).channelVerified = true;
     return next();
   }
 
