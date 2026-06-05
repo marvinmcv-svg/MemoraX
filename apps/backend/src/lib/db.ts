@@ -1,21 +1,31 @@
+import { db as _db, schema as _schema, type Database } from '@memorax/db';
+
 const databaseUrl = process.env.DATABASE_URL;
 
-let db: any = null;
-let sql: any = null;
-
-if (databaseUrl) {
-  try {
-    const { neon } = require('@neondatabase/serverless');
-    const { drizzle } = require('drizzle-orm/neon-http');
-    sql = neon(databaseUrl);
-    db = drizzle(sql);
-    console.log('Database connected successfully');
-  } catch (error) {
-    console.error('Database connection failed:', error);
-  }
+if (_db) {
+  console.log('Database connected successfully');
 } else {
-  console.warn('DATABASE_URL not set - running in mock mode');
+  if (databaseUrl) {
+    console.warn('DATABASE_URL is set but the database client failed to initialize — running without database');
+  } else {
+    console.warn('DATABASE_URL not set — running in mock mode (no database)');
+  }
 }
 
-export { db, sql };
-export type Database = typeof db;
+export const db = _db;
+export const schema = _schema;
+
+export function getDb(): Database | null {
+  return _db;
+}
+
+export function requireDb(): Database {
+  if (!_db) {
+    throw new Error(
+      'Database is not configured. Set DATABASE_URL in your environment (or in apps/backend/.env) and restart the server.'
+    );
+  }
+  return _db;
+}
+
+export type { Database };

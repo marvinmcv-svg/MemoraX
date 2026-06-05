@@ -8,7 +8,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "drizzle-kit migrate",
+    "db:migrate": "tsx --env-file=.env src/migrations/run.ts",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push"
   },
@@ -19,6 +19,7 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "drizzle-kit": "^0.20.0",
+    "tsx": "^4.10.0",
     "typescript": "^5.4.0"
   }
 }

@@ -1,4 +1,4 @@
-import { Router, Request, Response, Router as ExpressRouter } from 'express';
+import { Router, Request, Response } from 'express';
 import { workspaceStore } from '../lib/store';
 import { v4 as uuid } from 'uuid';
 
@@ -7,7 +7,7 @@ const workspaceRoutes: Router = Router();
 workspaceRoutes.get('/', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId || 'anonymous';
-    const workspaces = workspaceStore.findByUser(userId);
+    const workspaces = await workspaceStore.findByUser(userId);
     return res.json({ data: workspaces });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to list workspaces' });
@@ -23,7 +23,7 @@ workspaceRoutes.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'name is required' });
     }
 
-    const workspace = workspaceStore.create({
+    const workspace = await workspaceStore.create({
       teamId: teamId || uuid(),
       name,
       description: description || null,
@@ -37,7 +37,7 @@ workspaceRoutes.post('/', async (req: Request, res: Response) => {
 
 workspaceRoutes.get('/:id', async (req: Request, res: Response) => {
   try {
-    const workspace = workspaceStore.findById(req.params.id);
+    const workspace = await workspaceStore.findById(req.params.id);
 
     if (!workspace) {
       return res.status(404).json({ error: 'Workspace not found' });
@@ -51,7 +51,7 @@ workspaceRoutes.get('/:id', async (req: Request, res: Response) => {
 
 workspaceRoutes.post('/:id/memories', async (req: Request, res: Response) => {
   try {
-    const workspace = workspaceStore.findById(req.params.id);
+    const workspace = await workspaceStore.findById(req.params.id);
 
     if (!workspace) {
       return res.status(404).json({ error: 'Workspace not found' });

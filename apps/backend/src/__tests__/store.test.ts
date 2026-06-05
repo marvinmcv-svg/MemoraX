@@ -32,9 +32,9 @@ const makeReminderInput = (
 });
 
 describe('memoryStore', () => {
-  it('create: returns a memory with id, createdAt, updatedAt', () => {
+  it('create: returns a memory with id, createdAt, updatedAt', async () => {
     const userId = uniqueUserId('create');
-    const memory = memoryStore.create(makeMemoryInput(userId, 'Test memory'));
+    const memory = await memoryStore.create(makeMemoryInput(userId, 'Test memory'));
 
     expect(memory).toHaveProperty('id');
     expect(memory).toHaveProperty('createdAt');
@@ -51,14 +51,14 @@ describe('memoryStore', () => {
     const userId = uniqueUserId('find-by-user');
     const otherUserId = uniqueUserId('find-by-user-other');
 
-    memoryStore.create(makeMemoryInput(userId, 'first'));
+    await memoryStore.create(makeMemoryInput(userId, 'first'));
     await delay(5);
-    memoryStore.create(makeMemoryInput(userId, 'second'));
+    await memoryStore.create(makeMemoryInput(userId, 'second'));
     await delay(5);
-    memoryStore.create(makeMemoryInput(userId, 'third'));
-    memoryStore.create(makeMemoryInput(otherUserId, 'other user memory'));
+    await memoryStore.create(makeMemoryInput(userId, 'third'));
+    await memoryStore.create(makeMemoryInput(otherUserId, 'other user memory'));
 
-    const memories = memoryStore.findByUser(userId);
+    const memories = await memoryStore.findByUser(userId);
 
     expect(memories).toHaveLength(3);
     expect(memories.every((m) => m.userId === userId)).toBe(true);
@@ -73,92 +73,92 @@ describe('memoryStore', () => {
     );
   });
 
-  it('findById: returns memory only if userId matches', () => {
+  it('findById: returns memory only if userId matches', async () => {
     const userId = uniqueUserId('find-by-id');
     const otherUserId = uniqueUserId('find-by-id-other');
-    const memory = memoryStore.create(makeMemoryInput(userId, 'find me'));
+    const memory = await memoryStore.create(makeMemoryInput(userId, 'find me'));
 
-    const found = memoryStore.findById(memory.id, userId);
+    const found = await memoryStore.findById(memory.id, userId);
     expect(found).toBeDefined();
     expect(found?.id).toBe(memory.id);
     expect(found?.content).toBe('find me');
 
-    const notFound = memoryStore.findById(memory.id, otherUserId);
+    const notFound = await memoryStore.findById(memory.id, otherUserId);
     expect(notFound).toBeUndefined();
   });
 
-  it('findById: returns undefined if not found', () => {
+  it('findById: returns undefined if not found', async () => {
     const userId = uniqueUserId('find-missing');
-    const result = memoryStore.findById('non-existent-id', userId);
+    const result = await memoryStore.findById('non-existent-id', userId);
     expect(result).toBeUndefined();
   });
 
-  it('delete: removes the memory and returns true', () => {
+  it('delete: removes the memory and returns true', async () => {
     const userId = uniqueUserId('delete');
-    const memory = memoryStore.create(makeMemoryInput(userId, 'to delete'));
+    const memory = await memoryStore.create(makeMemoryInput(userId, 'to delete'));
 
-    const result = memoryStore.delete(memory.id, userId);
+    const result = await memoryStore.delete(memory.id, userId);
     expect(result).toBe(true);
 
-    const afterDelete = memoryStore.findById(memory.id, userId);
+    const afterDelete = await memoryStore.findById(memory.id, userId);
     expect(afterDelete).toBeUndefined();
   });
 
-  it('delete: returns false if not found', () => {
+  it('delete: returns false if not found', async () => {
     const userId = uniqueUserId('delete-missing');
-    const result = memoryStore.delete('non-existent-id', userId);
+    const result = await memoryStore.delete('non-existent-id', userId);
     expect(result).toBe(false);
   });
 
-  it('delete: returns false if userId does not match', () => {
+  it('delete: returns false if userId does not match', async () => {
     const userId = uniqueUserId('delete-wrong-user');
     const otherUserId = uniqueUserId('delete-wrong-user-other');
-    const memory = memoryStore.create(makeMemoryInput(userId, 'protected'));
+    const memory = await memoryStore.create(makeMemoryInput(userId, 'protected'));
 
-    const result = memoryStore.delete(memory.id, otherUserId);
+    const result = await memoryStore.delete(memory.id, otherUserId);
     expect(result).toBe(false);
 
-    const stillThere = memoryStore.findById(memory.id, userId);
+    const stillThere = await memoryStore.findById(memory.id, userId);
     expect(stillThere).toBeDefined();
   });
 
-  it('search: filters by query case-insensitively', () => {
+  it('search: filters by query case-insensitively', async () => {
     const userId = uniqueUserId('search');
-    memoryStore.create(makeMemoryInput(userId, 'Buy groceries at the Market'));
-    memoryStore.create(makeMemoryInput(userId, 'Call mom on Sunday'));
-    memoryStore.create(makeMemoryInput(userId, 'MARKET research notes'));
+    await memoryStore.create(makeMemoryInput(userId, 'Buy groceries at the Market'));
+    await memoryStore.create(makeMemoryInput(userId, 'Call mom on Sunday'));
+    await memoryStore.create(makeMemoryInput(userId, 'MARKET research notes'));
 
-    const lowerResults = memoryStore.search(userId, 'market');
+    const lowerResults = await memoryStore.search(userId, 'market');
     expect(lowerResults).toHaveLength(2);
     expect(lowerResults.every((m) => m.content.toLowerCase().includes('market'))).toBe(true);
 
-    const upperResults = memoryStore.search(userId, 'MARKET');
+    const upperResults = await memoryStore.search(userId, 'MARKET');
     expect(upperResults).toHaveLength(2);
 
-    const mixedResults = memoryStore.search(userId, 'MaRkEt');
+    const mixedResults = await memoryStore.search(userId, 'MaRkEt');
     expect(mixedResults).toHaveLength(2);
 
-    const noResults = memoryStore.search(userId, 'nonexistent-term-xyz');
+    const noResults = await memoryStore.search(userId, 'nonexistent-term-xyz');
     expect(noResults).toHaveLength(0);
   });
 
-  it('search: only returns memories for the specified user', () => {
+  it('search: only returns memories for the specified user', async () => {
     const userId = uniqueUserId('search-user-scope');
     const otherUserId = uniqueUserId('search-user-scope-other');
-    memoryStore.create(makeMemoryInput(userId, 'shared keyword apple'));
-    memoryStore.create(makeMemoryInput(otherUserId, 'shared keyword apple'));
+    await memoryStore.create(makeMemoryInput(userId, 'shared keyword apple'));
+    await memoryStore.create(makeMemoryInput(otherUserId, 'shared keyword apple'));
 
-    const results = memoryStore.search(userId, 'apple');
+    const results = await memoryStore.search(userId, 'apple');
     expect(results).toHaveLength(1);
     expect(results[0].userId).toBe(userId);
   });
 });
 
 describe('reminderStore', () => {
-  it('create: returns a reminder with id and createdAt', () => {
+  it('create: returns a reminder with id and createdAt', async () => {
     const userId = uniqueUserId('reminder-create');
     const remindAt = new Date(Date.now() + 60_000);
-    const reminder = reminderStore.create(
+    const reminder = await reminderStore.create(
       makeReminderInput(userId, 'memory-id-1', remindAt)
     );
 
@@ -173,25 +173,25 @@ describe('reminderStore', () => {
     expect(reminder.status).toBe('pending');
   });
 
-  it('findByUser: returns only reminders for that user, sorted by remindAt asc', () => {
+  it('findByUser: returns only reminders for that user, sorted by remindAt asc', async () => {
     const userId = uniqueUserId('reminder-find-by-user');
     const otherUserId = uniqueUserId('reminder-find-by-user-other');
     const now = Date.now();
 
-    reminderStore.create(
+    await reminderStore.create(
       makeReminderInput(userId, 'm1', new Date(now + 30_000))
     );
-    reminderStore.create(
+    await reminderStore.create(
       makeReminderInput(userId, 'm2', new Date(now + 10_000))
     );
-    reminderStore.create(
+    await reminderStore.create(
       makeReminderInput(userId, 'm3', new Date(now + 20_000))
     );
-    reminderStore.create(
+    await reminderStore.create(
       makeReminderInput(otherUserId, 'm-other', new Date(now + 5_000))
     );
 
-    const reminders = reminderStore.findByUser(userId);
+    const reminders = await reminderStore.findByUser(userId);
 
     expect(reminders).toHaveLength(3);
     expect(reminders.every((r) => r.userId === userId)).toBe(true);
@@ -206,34 +206,34 @@ describe('reminderStore', () => {
     );
   });
 
-  it('findById: returns reminder only if userId matches', () => {
+  it('findById: returns reminder only if userId matches', async () => {
     const userId = uniqueUserId('reminder-find-by-id');
     const otherUserId = uniqueUserId('reminder-find-by-id-other');
-    const reminder = reminderStore.create(
+    const reminder = await reminderStore.create(
       makeReminderInput(userId, 'memory-x', new Date(Date.now() + 60_000))
     );
 
-    const found = reminderStore.findById(reminder.id, userId);
+    const found = await reminderStore.findById(reminder.id, userId);
     expect(found).toBeDefined();
     expect(found?.id).toBe(reminder.id);
     expect(found?.memoryId).toBe('memory-x');
 
-    const notFound = reminderStore.findById(reminder.id, otherUserId);
+    const notFound = await reminderStore.findById(reminder.id, otherUserId);
     expect(notFound).toBeUndefined();
 
-    const missing = reminderStore.findById('non-existent-id', userId);
+    const missing = await reminderStore.findById('non-existent-id', userId);
     expect(missing).toBeUndefined();
   });
 
-  it('update: modifies the reminder fields', () => {
+  it('update: modifies the reminder fields', async () => {
     const userId = uniqueUserId('reminder-update');
     const originalRemindAt = new Date(Date.now() + 60_000);
-    const reminder = reminderStore.create(
+    const reminder = await reminderStore.create(
       makeReminderInput(userId, 'memory-update', originalRemindAt)
     );
 
     const newRemindAt = new Date(Date.now() + 120_000);
-    const updated = reminderStore.update(reminder.id, userId, {
+    const updated = await reminderStore.update(reminder.id, userId, {
       status: 'snoozed',
       remindAt: newRemindAt,
     });
@@ -243,64 +243,64 @@ describe('reminderStore', () => {
     expect(updated?.remindAt.getTime()).toBe(newRemindAt.getTime());
     expect(updated?.id).toBe(reminder.id);
 
-    const fetched = reminderStore.findById(reminder.id, userId);
+    const fetched = await reminderStore.findById(reminder.id, userId);
     expect(fetched?.status).toBe('snoozed');
     expect(fetched?.remindAt.getTime()).toBe(newRemindAt.getTime());
   });
 
-  it('update: returns undefined if reminder does not belong to user', () => {
+  it('update: returns undefined if reminder does not belong to user', async () => {
     const userId = uniqueUserId('reminder-update-wrong');
     const otherUserId = uniqueUserId('reminder-update-wrong-other');
-    const reminder = reminderStore.create(
+    const reminder = await reminderStore.create(
       makeReminderInput(userId, 'memory-y', new Date(Date.now() + 60_000))
     );
 
-    const result = reminderStore.update(reminder.id, otherUserId, {
+    const result = await reminderStore.update(reminder.id, otherUserId, {
       status: 'cancelled',
     });
     expect(result).toBeUndefined();
 
-    const unchanged = reminderStore.findById(reminder.id, userId);
+    const unchanged = await reminderStore.findById(reminder.id, userId);
     expect(unchanged?.status).toBe('pending');
   });
 
-  it('delete: removes and returns true', () => {
+  it('delete: removes and returns true', async () => {
     const userId = uniqueUserId('reminder-delete');
-    const reminder = reminderStore.create(
+    const reminder = await reminderStore.create(
       makeReminderInput(userId, 'memory-del', new Date(Date.now() + 60_000))
     );
 
-    const result = reminderStore.delete(reminder.id, userId);
+    const result = await reminderStore.delete(reminder.id, userId);
     expect(result).toBe(true);
 
-    const afterDelete = reminderStore.findById(reminder.id, userId);
+    const afterDelete = await reminderStore.findById(reminder.id, userId);
     expect(afterDelete).toBeUndefined();
   });
 
-  it('delete: returns false if not found', () => {
+  it('delete: returns false if not found', async () => {
     const userId = uniqueUserId('reminder-delete-missing');
-    const result = reminderStore.delete('non-existent-id', userId);
+    const result = await reminderStore.delete('non-existent-id', userId);
     expect(result).toBe(false);
   });
 
-  it('findDue: returns reminders where status=pending and remindAt <= now', () => {
+  it('findDue: returns reminders where status=pending and remindAt <= now', async () => {
     const userId = uniqueUserId('reminder-find-due');
     const now = Date.now();
 
-    const duePending = reminderStore.create(
+    const duePending = await reminderStore.create(
       makeReminderInput(userId, 'due-pending', new Date(now - 10_000), 'pending')
     );
-    const dueSent = reminderStore.create(
+    const dueSent = await reminderStore.create(
       makeReminderInput(userId, 'due-sent', new Date(now - 10_000), 'sent')
     );
-    const dueCancelled = reminderStore.create(
+    const dueCancelled = await reminderStore.create(
       makeReminderInput(userId, 'due-cancelled', new Date(now - 10_000), 'cancelled')
     );
-    const futurePending = reminderStore.create(
+    const futurePending = await reminderStore.create(
       makeReminderInput(userId, 'future-pending', new Date(now + 60_000), 'pending')
     );
 
-    const due = reminderStore.findDue();
+    const due = await reminderStore.findDue();
     const dueIds = due.map((r) => r.id);
 
     expect(dueIds).toContain(duePending.id);

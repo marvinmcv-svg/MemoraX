@@ -1,4 +1,4 @@
-import { Router, Request, Response, Router as ExpressRouter } from 'express';
+import { Router, Request, Response } from 'express';
 import { reminderStore } from '../lib/store';
 import { v4 as uuid } from 'uuid';
 import type { ChannelType } from '../types';
@@ -14,7 +14,7 @@ reminderRoutes.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'memoryId and remindAt are required' });
     }
 
-    const reminder = reminderStore.create({
+    const reminder = await reminderStore.create({
       userId,
       memoryId,
       remindAt: new Date(remindAt),
@@ -35,7 +35,7 @@ reminderRoutes.get('/', async (req: Request, res: Response) => {
     const userId = (req as any).userId || 'anonymous';
     const { status } = req.query;
 
-    let reminders = reminderStore.findByUser(userId);
+    let reminders = await reminderStore.findByUser(userId);
 
     if (status) {
       reminders = reminders.filter(r => r.status === status);
@@ -50,7 +50,7 @@ reminderRoutes.get('/', async (req: Request, res: Response) => {
 reminderRoutes.get('/:id', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId || 'anonymous';
-    const reminder = reminderStore.findById(req.params.id, userId);
+    const reminder = await reminderStore.findById(req.params.id, userId);
 
     if (!reminder) {
       return res.status(404).json({ error: 'Reminder not found' });
@@ -65,7 +65,7 @@ reminderRoutes.get('/:id', async (req: Request, res: Response) => {
 reminderRoutes.put('/:id', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId || 'anonymous';
-    const reminder = reminderStore.update(req.params.id, userId, req.body);
+    const reminder = await reminderStore.update(req.params.id, userId, req.body);
 
     if (!reminder) {
       return res.status(404).json({ error: 'Reminder not found' });
@@ -80,7 +80,7 @@ reminderRoutes.put('/:id', async (req: Request, res: Response) => {
 reminderRoutes.delete('/:id', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId || 'anonymous';
-    const deleted = reminderStore.delete(req.params.id, userId);
+    const deleted = await reminderStore.delete(req.params.id, userId);
 
     if (!deleted) {
       return res.status(404).json({ error: 'Reminder not found' });
@@ -97,7 +97,7 @@ reminderRoutes.post('/:id/snooze', async (req: Request, res: Response) => {
     const userId = (req as any).userId || 'anonymous';
     const { minutes = 15 } = req.body;
 
-    const reminder = reminderStore.update(req.params.id, userId, {
+    const reminder = await reminderStore.update(req.params.id, userId, {
       remindAt: new Date(Date.now() + minutes * 60000),
       status: 'pending',
     });

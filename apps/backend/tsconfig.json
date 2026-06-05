@@ -14,6 +14,7 @@
     "baseUrl": "../..",
     "paths": {
       "@memorax/ai": ["packages/ai/src"],
+      "@memorax/db": ["packages/db/src"],
       "@memorax/shared": ["packages/shared/src"]
     }
   },

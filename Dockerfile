@@ -20,4 +20,5 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps ./apps
 COPY --from=builder /app/packages ./packages
 EXPOSE 3001
-CMD ["node", "apps/backend/dist/apps/backend/src/index.js"]
+WORKDIR /app/apps/backend
+CMD ["node", "dist/index.js"]

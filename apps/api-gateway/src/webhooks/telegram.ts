@@ -6,7 +6,7 @@ async function verifyTelegramToken(token: string): Promise<boolean> {
     const res = await fetch(`https://api.telegram.org/bot${token}/getMe`, {
       method: 'GET',
     });
-    const data = await res.json();
+    const data = await res.json() as { ok?: boolean };
     return data.ok === true;
   } catch {
     return false;

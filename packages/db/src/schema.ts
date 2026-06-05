@@ -40,6 +40,11 @@ export const memories = pgTable('memories', {
   sourceChannel: text('source_channel'),
   mediaUrl: text('media_url'),
   metadata: jsonb('metadata').default({}).notNull(),
+  // Stored as a JSON-stringified float[] at the Drizzle level.
+  // The actual pg column is `vector(1536)` and is created/owned by
+  // packages/db/src/migrations/001_initial.sql (and run via src/migrations/run.ts).
+  // drizzle-orm 0.30 does not export a `vector()` column type; once we bump
+  // to >=0.31 we can replace this with `vector('embedding', { dimensions: 1536 })`.
   embedding: text('embedding'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),

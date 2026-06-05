@@ -67,7 +67,7 @@ channelRoutes.get('/health/:channel', async (c) => {
     const start = Date.now();
     try {
       const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getMe`);
-      const data = await res.json();
+      const data = await res.json() as { ok?: boolean; error_code?: number; description?: string };
       health.telegram = {
         status: data.ok ? 'connected' : 'error',
         latency: Date.now() - start,
@@ -84,7 +84,7 @@ channelRoutes.get('/health/:channel', async (c) => {
       const res = await fetch('https://slack.com/api/auth.test', {
         headers: { Authorization: `Bearer ${SLACK_BOT_TOKEN}` },
       });
-      const data = await res.json();
+      const data = await res.json() as { ok?: boolean; error?: string };
       health.slack = {
         status: data.ok ? 'connected' : 'error',
         latency: Date.now() - start,
@@ -131,10 +131,10 @@ channelRoutes.post('/send/whatsapp', async (c) => {
   }
 
   if (mediaUrl) {
-    const result = await sendWhatsAppMediaMessage(c as AppContext, { to, mediaUrl, caption });
+    const result = await sendWhatsAppMediaMessage(c, { to, mediaUrl, caption });
     return c.json(result);
   }
 
-  const result = await sendWhatsAppMessage(c as AppContext, { to, body: msgBody });
+  const result = await sendWhatsAppMessage(c, { to, body: msgBody });
   return c.json(result);
 });

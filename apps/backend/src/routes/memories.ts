@@ -1,8 +1,7 @@
-import { Router, Request, Response, Router as ExpressRouter } from 'express';
+import { Router, Request, Response } from 'express';
 import { memoryStore } from '../lib/store';
 import { serendipityEngine } from '../lib/serendipity';
 import { aiPipeline } from '../services/ai-pipeline';
-import { v4 as uuid } from 'uuid';
 import type { ContentType, IntentType, ChannelType } from '../types';
 
 const memoryRoutes: Router = Router();
@@ -16,7 +15,7 @@ memoryRoutes.post('/', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Content is required' });
     }
 
-    const memory = memoryStore.create({
+    const memory = await memoryStore.create({
       userId,
       content,
       contentType: (contentType || 'text') as ContentType,
@@ -33,20 +32,22 @@ memoryRoutes.post('/', async (req: Request, res: Response) => {
       memoryId: memory.id,
     });
 
-    memory.intent = aiResult.intent;
-    memory.embedding = aiResult.embedding.length > 0 ? aiResult.embedding : null;
-    memory.updatedAt = new Date();
+    const updated = await memoryStore.setIntentAndEmbedding(
+      memory.id,
+      aiResult.intent,
+      aiResult.embedding.length > 0 ? aiResult.embedding : null
+    );
 
     serendipityEngine.recordMemory({
       id: memory.id,
       content: memory.content,
-      intent: memory.intent,
+      intent: updated?.intent ?? memory.intent,
       sourceChannel: memory.sourceChannel,
       createdAt: memory.createdAt.toISOString(),
     });
 
     return res.status(201).json({
-      memory,
+      memory: updated ?? memory,
       aiStages: aiResult.stages,
       processingTime: aiResult.processingTime,
     });
@@ -59,7 +60,7 @@ memoryRoutes.post('/', async (req: Request, res: Response) => {
 memoryRoutes.get('/', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId || 'anonymous';
-    const memories = memoryStore.findByUser(userId);
+    const memories = await memoryStore.findByUser(userId);
     return res.json({
       data: memories,
       total: memories.length,
@@ -76,7 +77,7 @@ memoryRoutes.get('/', async (req: Request, res: Response) => {
 memoryRoutes.get('/:id', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId || 'anonymous';
-    const memory = memoryStore.findById(req.params.id, userId);
+    const memory = await memoryStore.findById(req.params.id, userId);
 
     if (!memory) {
       return res.status(404).json({ error: 'Memory not found' });
@@ -91,18 +92,14 @@ memoryRoutes.get('/:id', async (req: Request, res: Response) => {
 memoryRoutes.put('/:id', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId || 'anonymous';
-    const memory = memoryStore.findById(req.params.id, userId);
+    const { content, metadata } = req.body;
+    const updated = await memoryStore.update(req.params.id, userId, { content, metadata });
 
-    if (!memory) {
+    if (!updated) {
       return res.status(404).json({ error: 'Memory not found' });
     }
 
-    const { content, metadata } = req.body;
-    if (content) memory.content = content;
-    if (metadata) memory.metadata = { ...memory.metadata, ...metadata };
-    memory.updatedAt = new Date();
-
-    return res.json(memory);
+    return res.json(updated);
   } catch (error) {
     return res.status(500).json({ error: 'Failed to update memory' });
   }
@@ -111,7 +108,7 @@ memoryRoutes.put('/:id', async (req: Request, res: Response) => {
 memoryRoutes.delete('/:id', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId || 'anonymous';
-    const deleted = memoryStore.delete(req.params.id, userId);
+    const deleted = await memoryStore.delete(req.params.id, userId);
 
     if (!deleted) {
       return res.status(404).json({ error: 'Memory not found' });
@@ -132,7 +129,7 @@ memoryRoutes.post('/search', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'Query is required' });
     }
 
-    const results = memoryStore.search(userId, query);
+    const results = await memoryStore.search(userId, query);
     return res.json({
       data: results.map(m => ({ memory: m, score: 1.0 })),
       query,

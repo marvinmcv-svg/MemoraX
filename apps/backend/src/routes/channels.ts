@@ -1,4 +1,4 @@
-import { Router, Request, Response, Router as ExpressRouter } from 'express';
+import { Router, Request, Response } from 'express';
 import { channelStore } from '../lib/store';
 import { v4 as uuid } from 'uuid';
 import type { ChannelType } from '../types';
@@ -8,7 +8,7 @@ const channelRoutes: Router = Router();
 channelRoutes.get('/', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId || 'anonymous';
-    const channels = channelStore.findByUser(userId);
+    const channels = await channelStore.findByUser(userId);
     return res.json({ data: channels });
   } catch (error) {
     return res.status(500).json({ error: 'Failed to list channels' });
@@ -24,12 +24,12 @@ channelRoutes.post('/connect', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'channel and channelUserId are required' });
     }
 
-    const existing = channelStore.findByChannelAndUserId(channel, channelUserId);
+    const existing = await channelStore.findByChannelAndUserId(channel, channelUserId);
     if (existing) {
       return res.status(409).json({ error: 'Channel already connected' });
     }
 
-    const newChannel = channelStore.create({
+    const newChannel = await channelStore.create({
       userId,
       channel: channel as ChannelType,
       channelUserId,
@@ -45,7 +45,7 @@ channelRoutes.post('/connect', async (req: Request, res: Response) => {
 channelRoutes.delete('/:id', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId || 'anonymous';
-    const deleted = channelStore.delete(req.params.id, userId);
+    const deleted = await channelStore.delete(req.params.id, userId);
 
     if (!deleted) {
       return res.status(404).json({ error: 'Channel not found' });

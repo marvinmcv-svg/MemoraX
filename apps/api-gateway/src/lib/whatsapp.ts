@@ -1,3 +1,4 @@
+import type { Context } from 'hono';
 import type { AppContext } from '../types';
 
 export interface WhatsAppMessage {
@@ -14,7 +15,7 @@ export interface WhatsAppMediaMessage {
 }
 
 export async function sendWhatsAppMessage(
-  c: AppContext,
+  c: Context<AppContext>,
   message: WhatsAppMessage
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const WHATSAPP_ACCESS_TOKEN = c.env.WHATSAPP_ACCESS_TOKEN || '';
@@ -44,7 +45,7 @@ export async function sendWhatsAppMessage(
       }
     );
 
-    const data = await res.json();
+    const data = await res.json() as { error?: { message: string }; messages?: Array<{ id: string }> };
 
     if (data.error) {
       console.error('WhatsApp send error:', data.error);
@@ -59,7 +60,7 @@ export async function sendWhatsAppMessage(
 }
 
 export async function sendWhatsAppMediaMessage(
-  c: AppContext,
+  c: Context<AppContext>,
   message: WhatsAppMediaMessage
 ): Promise<{ success: boolean; messageId?: string; error?: string }> {
   const WHATSAPP_ACCESS_TOKEN = c.env.WHATSAPP_ACCESS_TOKEN || '';
@@ -90,7 +91,7 @@ export async function sendWhatsAppMediaMessage(
       }
     );
 
-    const data = await res.json();
+    const data = await res.json() as { error?: { message: string }; messages?: Array<{ id: string }> };
 
     if (data.error) {
       console.error('WhatsApp media send error:', data.error);
@@ -118,7 +119,7 @@ export async function verifyWhatsAppCredentials(
       }
     );
 
-    const data = await res.json();
+    const data = await res.json() as { error?: { message: string }; display_phone_number?: string };
 
     if (data.error) {
       return { valid: false, error: data.error.message };

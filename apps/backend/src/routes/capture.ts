@@ -21,7 +21,7 @@ captureRoutes.post('/', async (req: Request, res: Response) => {
 
     const userId = `channel-${channel}-${channelUserId}`;
 
-    const memory = memoryStore.create({
+    const memory = await memoryStore.create({
       userId,
       content,
       contentType: (contentType || 'text') as ContentType,
@@ -38,17 +38,19 @@ captureRoutes.post('/', async (req: Request, res: Response) => {
       memoryId: memory.id,
     });
 
-    memory.intent = aiResult.intent;
-    memory.embedding = aiResult.embedding.length > 0 ? aiResult.embedding : null;
-    memory.updatedAt = new Date();
+    const updated = await memoryStore.setIntentAndEmbedding(
+      memory.id,
+      aiResult.intent,
+      aiResult.embedding.length > 0 ? aiResult.embedding : null
+    );
 
     if (aiResult.entities.length > 0) {
-      knowledgeGraph.addMemoryToGraph(memory.id, aiResult.entities);
+      knowledgeGraph.addMemoryToGraph(updated?.id ?? memory.id, aiResult.entities);
     }
 
     return res.status(201).json({
       success: true,
-      memory,
+      memory: updated ?? memory,
       intent: aiResult.intent,
       entities: aiResult.entities,
       processingTime: aiResult.processingTime,

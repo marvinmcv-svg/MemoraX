@@ -7,7 +7,7 @@ const serendipityRoutes: Router = Router();
 serendipityRoutes.get('/discover', async (req: Request, res: Response) => {
   try {
     const userId = (req as any).userId || 'anonymous';
-    const recentMemories = memoryStore.findByUser(userId).slice(0, 20).map(m => m.content);
+    const recentMemories = (await memoryStore.findByUser(userId)).slice(0, 20).map(m => m.content);
 
     const scores = serendipityEngine.getScoreForContext({
       recentMemories,
