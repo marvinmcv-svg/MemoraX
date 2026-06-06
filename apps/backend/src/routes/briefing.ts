@@ -1,31 +1,28 @@
-import { Router, Request, Response, Router as ExpressRouter } from 'express';
-import Anthropic from '@anthropic-ai/sdk';
+import { Router, Request, Response } from 'express';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { briefingStore, memoryStore, reminderStore } from '../lib/store';
 import { v4 as uuid } from 'uuid';
 
 const briefingRoutes: Router = Router();
 
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || '';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
 
-const anthropic = ANTHROPIC_API_KEY ? new Anthropic({ apiKey: ANTHROPIC_API_KEY }) : null;
+const genai = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null;
+const BRIEFING_MODEL = genai
+  ? genai.getGenerativeModel({
+      model: 'gemini-2.5-flash',
+      systemInstruction:
+        'You are a helpful AI assistant that generates personalized daily briefings. Keep the briefing concise but informative, around 150-200 words.',
+      generationConfig: { maxOutputTokens: 1024 },
+    })
+  : null;
 
-async function callAnthropic(prompt: string, systemPrompt: string): Promise<string> {
-  if (!anthropic) {
-    throw new Error('ANTHROPIC_API_KEY not configured');
+async function callGemini(prompt: string): Promise<string> {
+  if (!BRIEFING_MODEL) {
+    throw new Error('GEMINI_API_KEY not configured');
   }
-
-  const message = await anthropic.messages.create({
-    model: 'claude-3-5-sonnet-20241022',
-    max_tokens: 1024,
-    system: systemPrompt,
-    messages: [{ role: 'user', content: prompt }],
-  });
-
-  const content = message.content[0];
-  if (content.type === 'text') {
-    return content.text;
-  }
-  return '';
+  const result = await BRIEFING_MODEL.generateContent(prompt);
+  return result.response.text();
 }
 
 briefingRoutes.post('/generate', async (req: Request, res: Response) => {
@@ -37,19 +34,16 @@ briefingRoutes.post('/generate', async (req: Request, res: Response) => {
 
     let briefingContent: string;
 
-    if (ANTHROPIC_API_KEY) {
+    if (GEMINI_API_KEY) {
       const memoriesSummary = memories.map(m => `- "${m.content.substring(0, 100)}"`).join('\n') || 'No recent memories';
       const remindersSummary = upcomingReminders.map(r => `- ${r.remindAt.toLocaleString()}`).join('\n') || 'No upcoming reminders';
 
       const prompt = `Generate a personalized daily briefing for the user based on their recent memories and upcoming reminders.\n\nRecent Memories:\n${memoriesSummary}\n\nUpcoming Reminders:\n${remindersSummary}\n\nFormat the briefing in a friendly, conversational tone. Include a greeting, summary of recent memories, upcoming reminders, and end with an interesting observation or suggestion.`;
 
       try {
-        briefingContent = await callAnthropic(
-          prompt,
-          'You are a helpful AI assistant that generates personalized daily briefings. Keep the briefing concise but informative, around 150-200 words.'
-        );
+        briefingContent = await callGemini(prompt);
       } catch (aiError) {
-        console.warn('Anthropic briefing generation failed, using fallback:', aiError);
+        console.warn('Gemini briefing generation failed, using fallback:', aiError);
         briefingContent = `Good morning! Here's your daily briefing:\n\nRecent Memories (${memories.length}):\n${memoriesSummary}\n\nUpcoming Reminders (${upcomingReminders.length}):\n${remindersSummary}`;
       }
     } else {
@@ -61,7 +55,7 @@ ${memories.map(m => `- "${m.content.substring(0, 100)}..."`).join('\n') || 'No r
 Upcoming Reminders (${upcomingReminders.length}):
 ${upcomingReminders.map(r => `- ${r.remindAt.toLocaleString()}`).join('\n') || 'No upcoming reminders'}
 
-Add ANTHROPIC_API_KEY for AI-powered personalized briefings.`;
+Add GEMINI_API_KEY for AI-powered personalized briefings.`;
     }
 
     const briefing = await briefingStore.create({

@@ -1,15 +1,17 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { IntentType } from '@memorax/shared';
 
-let anthropicClient: Anthropic | null = null;
+let genaiClient: GoogleGenerativeAI | null = null;
 
-function getAnthropicClient(): Anthropic | null {
-  if (!process.env.ANTHROPIC_API_KEY) return null;
-  if (!anthropicClient) {
-    anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+function getGeminiClient(): GoogleGenerativeAI | null {
+  if (!process.env.GEMINI_API_KEY) return null;
+  if (!genaiClient) {
+    genaiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   }
-  return anthropicClient;
+  return genaiClient;
 }
+
+const INTENT_MODEL = 'gemini-2.0-flash';
 
 const INTENT_CLASSIFIER_PROMPT = `You are an intent classifier for MemoraX, an AI memory OS. Classify the user's message into one of these intent categories:
 
@@ -41,29 +43,27 @@ export interface IntentResult {
 }
 
 export async function classifyIntent(content: string): Promise<IntentResult> {
-  const client = getAnthropicClient();
+  const client = getGeminiClient();
   if (!client) {
-    return { intent: 'unknown', confidence: 0, reasoning: 'Anthropic API key not configured' };
+    return { intent: 'unknown', confidence: 0, reasoning: 'Gemini API key not configured' };
   }
 
-  const response = await client.messages.create({
-    model: 'claude-3-5-haiku-20241022',
-    max_tokens: 300,
-    messages: [
-      {
-        role: 'user',
-        content: `${INTENT_CLASSIFIER_PROMPT}${content}`,
-      },
-    ],
+  const model = client.getGenerativeModel({
+    model: INTENT_MODEL,
+    generationConfig: {
+      maxOutputTokens: 300,
+      responseMimeType: 'application/json',
+    },
   });
 
-  const resultText = response.content[0].type === 'text' ? response.content[0].text : '';
+  const result = await model.generateContent(`${INTENT_CLASSIFIER_PROMPT}${content}`);
+  const resultText = result.response.text();
 
   try {
     const parsed = JSON.parse(resultText);
     return {
       intent: parsed.intent || 'unknown',
-      confidence: parsed.confidence || 0.5,
+      confidence: typeof parsed.confidence === 'number' ? parsed.confidence : 0.5,
       reasoning: parsed.reasoning || '',
     };
   } catch {

@@ -35,7 +35,7 @@ Why this works:
 - GitHub repo pushed: `git push origin main`
 - Railway account at https://railway.app (the $5/mo hobby credit covers a starter deployment)
 - Clerk account at https://dashboard.clerk.com (auth keys)
-- One AI provider key: Anthropic (recommended) or OpenAI
+- One AI provider key: Google Gemini (recommended) or OpenAI
 - Optional: Stripe, Twilio, WhatsApp, Telegram, Slack, Deepgram (add later when you wire those features)
 
 ---
@@ -88,7 +88,7 @@ Alternative: use Neon (https://neon.tech) for a free tier and point `DATABASE_UR
 | `NODE_ENV` | `production` | |
 | `PORT` | `3001` | |
 | `CLERK_SECRET_KEY` | `sk_test_...` | use `sk_live_...` for prod |
-| `ANTHROPIC_API_KEY` | `sk-ant-...` | optional but recommended |
+| `GEMINI_API_KEY` | `AIza...` | optional but recommended |
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` | click "Add Reference" -> pick Postgres -> DATABASE_URL |
 | `STRIPE_SECRET_KEY` | _(empty)_ | optional |
 | `OPENAI_API_KEY` | _(empty)_ | optional (embeddings) |
@@ -207,7 +207,7 @@ This creates the `memories`, `reminders`, `workspaces`, etc. tables and enables 
 ## 8. Production hardening checklist
 
 - [ ] Switch Clerk to live keys (`sk_live_...`, `pk_live_...`).
-- [ ] Switch Anthropic to a paid-tier key (free tier has low rate limits).
+- [ ] Switch Gemini to a paid-tier key if free tier rate limits are hit.
 - [ ] Add a custom domain to the web service (Settings -> Domains).
 - [ ] Put Cloudflare in front of the custom domain for DDoS protection and a free TLS edge.
 - [ ] Restrict CORS in `apps/backend/src/index.ts:21`. Currently `cors()` is fully open. Change to:

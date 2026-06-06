@@ -23,7 +23,7 @@ export interface AIPipelineResponse {
 
 class AIPipelineService {
   private isConfigured(): boolean {
-    return !!(process.env.ANTHROPIC_API_KEY && process.env.OPENAI_API_KEY);
+    return !!(process.env.GEMINI_API_KEY && process.env.OPENAI_API_KEY);
   }
 
   async process(config: AIPipelineConfig): Promise<AIPipelineResponse> {

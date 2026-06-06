@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.27.0",
+    "@google/generative-ai": "^0.21.0",
     "@memorax/shared": "workspace:*",
     "openai": "^4.47.0"
   },

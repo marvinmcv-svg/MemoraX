@@ -19,7 +19,7 @@ Your AI-powered memory assistant that never forgets. Capture anything from any c
 - **Backend**: Node.js/TypeScript with Express
 - **Database**: PostgreSQL (Neon) + pgvector
 - **Cache**: Upstash Redis
-- **AI**: Claude (Anthropic), GPT-4 (OpenAI), Deepgram
+- **AI**: Gemini (Google), GPT-4 (OpenAI), Deepgram
 - **Auth**: Clerk
 - **Infrastructure**: Railway, Cloudflare
 
@@ -53,7 +53,7 @@ cp apps/web/.env.example apps/web/.env.local
 # Backend
 DATABASE_URL=
 CLERK_SECRET_KEY=
-ANTHROPIC_API_KEY=
+GEMINI_API_KEY=
 OPENAI_API_KEY=
 DEEPGRAM_API_KEY=
 

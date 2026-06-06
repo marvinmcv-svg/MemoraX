@@ -1,15 +1,17 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { Memory, Briefing, Reminder } from '@memorax/shared';
 
-let anthropicClient: Anthropic | null = null;
+let genaiClient: GoogleGenerativeAI | null = null;
 
-function getAnthropicClient(): Anthropic | null {
-  if (!process.env.ANTHROPIC_API_KEY) return null;
-  if (!anthropicClient) {
-    anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+function getGeminiClient(): GoogleGenerativeAI | null {
+  if (!process.env.GEMINI_API_KEY) return null;
+  if (!genaiClient) {
+    genaiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   }
-  return anthropicClient;
+  return genaiClient;
 }
+
+const BRIEFING_MODEL = 'gemini-2.5-flash';
 
 export interface BriefingContext {
   recentMemories: Memory[];
@@ -18,7 +20,7 @@ export interface BriefingContext {
   timezone: string;
 }
 
-const BRIEFING_PROMPT = `You are MemoraX, an AI memory assistant. Generate a personalized daily briefing for the user.
+const BRIEFING_SYSTEM_PROMPT = `You are MemoraX, an AI memory assistant. Generate a personalized daily briefing for the user.
 
 Today's briefing should include:
 1. **Good morning summary** - A warm, concise greeting
@@ -48,14 +50,12 @@ Example format:
 • 12 memories this week
 • 5-day streak
 ---
-
-Now generate a briefing based on this data:
 `;
 
 export async function generateBriefing(context: BriefingContext): Promise<string> {
-  const client = getAnthropicClient();
+  const client = getGeminiClient();
   if (!client) {
-    return 'AI briefing not available. Configure ANTHROPIC_API_KEY for personalized briefings.';
+    return 'AI briefing not available. Configure GEMINI_API_KEY for personalized briefings.';
   }
 
   const memoriesText = context.recentMemories
@@ -69,15 +69,15 @@ export async function generateBriefing(context: BriefingContext): Promise<string
 
   const userName = context.userName || 'there';
 
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 1000,
-    messages: [
-      {
-        role: 'user',
-        content: `${BRIEFING_PROMPT}
+  const model = client.getGenerativeModel({
+    model: BRIEFING_MODEL,
+    systemInstruction: BRIEFING_SYSTEM_PROMPT,
+    generationConfig: {
+      maxOutputTokens: 1000,
+    },
+  });
 
-User: ${userName}
+  const userPrompt = `User: ${userName}
 Timezone: ${context.timezone}
 
 Recent Memories:
@@ -86,14 +86,10 @@ ${memoriesText || 'No recent memories'}
 Today's Reminders:
 ${remindersText || 'No reminders for today'}
 
-Generate the briefing now:`,
-      },
-    ],
-  });
+Generate the briefing now:`;
 
-  const briefingText = response.content[0].type === 'text' ? response.content[0].text : '';
-
-  return briefingText;
+  const result = await model.generateContent(userPrompt);
+  return result.response.text();
 }
 
 function formatRelativeTime(date: Date, timezone: string): string {

@@ -1,15 +1,17 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import type { EntityType, MemoryEntity } from '@memorax/shared';
 
-let anthropicClient: Anthropic | null = null;
+let genaiClient: GoogleGenerativeAI | null = null;
 
-function getAnthropicClient(): Anthropic | null {
-  if (!process.env.ANTHROPIC_API_KEY) return null;
-  if (!anthropicClient) {
-    anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+function getGeminiClient(): GoogleGenerativeAI | null {
+  if (!process.env.GEMINI_API_KEY) return null;
+  if (!genaiClient) {
+    genaiClient = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   }
-  return anthropicClient;
+  return genaiClient;
 }
+
+const ENTITY_MODEL = 'gemini-2.5-flash';
 
 const ENTITY_EXTRACTOR_PROMPT = `You are an entity extractor for MemoraX, an AI memory OS. Extract entities from the user's message.
 
@@ -47,28 +49,31 @@ export interface EntityExtractionResult {
 }
 
 export async function extractEntities(content: string): Promise<EntityExtractionResult> {
-  const client = getAnthropicClient();
+  const client = getGeminiClient();
   if (!client) {
     return { entities: [], relationships: [] };
   }
 
-  const response = await client.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 500,
-    messages: [
-      {
-        role: 'user',
-        content: `${ENTITY_EXTRACTOR_PROMPT}${content}`,
-      },
-    ],
+  const model = client.getGenerativeModel({
+    model: ENTITY_MODEL,
+    generationConfig: {
+      maxOutputTokens: 500,
+      responseMimeType: 'application/json',
+    },
   });
 
-  const resultText = response.content[0].type === 'text' ? response.content[0].text : '';
+  const result = await model.generateContent(`${ENTITY_EXTRACTOR_PROMPT}${content}`);
+  const resultText = result.response.text();
 
   try {
     const parsed = JSON.parse(resultText);
+    const entities: ExtractedEntity[] = Array.isArray(parsed) ? parsed : [];
     return {
-      entities: parsed || [],
+      entities: entities.map((e: any) => ({
+        type: e.type || 'TOPIC',
+        value: e.value || '',
+        confidence: typeof e.confidence === 'number' ? e.confidence : 0.8,
+      })),
       relationships: [],
     };
   } catch {
