@@ -8,7 +8,7 @@
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --env-file=.env src/migrations/run.ts",
+    "db:migrate": "tsx src/migrations/run.ts",
     "db:studio": "drizzle-kit studio",
     "db:push": "drizzle-kit push"
   },

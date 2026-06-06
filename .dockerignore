@@ -1,11 +1,18 @@
 node_modules
+**/node_modules
 package-lock.json
 yarn.lock
 .next
+**/.next
 dist
+**/dist
 .turbo
+**/.turbo
 .git
+**/.git
 *.md
+!apps/*/README.md
+!packages/*/README.md
 .env
 .env.*
 !.env.example
@@ -16,6 +23,23 @@ dist
 .DS_Store
 coverage
 .nyc_output
+
+# Vendored / unrelated project directories (drastically reduce build context)
+Family Farm
+hermes-agent
+hermes-webui
+.docker
+temp
+**/.docker
+apps/mobile
+apps/api-gateway
+
+# Windows / IDE noise
+*.bat
+*.ps1
+Thumbs.db
+
+# Build artifacts that are not part of the apps we ship
 apps/mobile/node_modules
 apps/api-gateway/node_modules
 packages/*/node_modules
