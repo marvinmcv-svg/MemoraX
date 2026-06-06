@@ -1,11 +1,11 @@
-import { neon } from '@neondatabase/serverless';
+import { Pool } from 'pg';
 
-const sql = neon(process.env.DATABASE_URL!);
+const pool = new Pool({ connectionString: process.env.DATABASE_URL! });
 
 async function migrate() {
   console.log('Running migrations...');
 
-  const migration = await sql(`
+  await pool.query(`
     -- Enable required extensions
     CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
     CREATE EXTENSION IF NOT EXISTS vector;
@@ -141,7 +141,7 @@ async function migrate() {
   `);
 
   console.log('Migrations completed successfully!');
-  console.log('Migration result:', migration);
+  await pool.end();
 }
 
 migrate().catch((error) => {
