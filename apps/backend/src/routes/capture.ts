@@ -7,7 +7,7 @@ import type { ContentType, ChannelType } from '../types';
 
 const captureRoutes: Router = Router();
 
-const UUID_NAMESPACE = '1a95fc97-c4ae-0725-5356-edb3f06d42b9';
+const UUID_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
 
 function channelUserIdToUuid(channel: string, channelUserId: string): string {
   return uuidv5(`${channel}:${channelUserId}`, UUID_NAMESPACE);
