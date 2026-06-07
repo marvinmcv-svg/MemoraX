@@ -9,12 +9,11 @@ const databaseUrl = process.env.DATABASE_URL;
 let db;
 let pool;
 if (databaseUrl) {
-  // node-postgres Pool: works with any TCP Postgres (Railway, Neon TCP, local docker).
-  // For internal Railway connections (`postgres.railway.internal`) no SSL is needed.
-  // For external Neon / cloud connections the URL may carry `?sslmode=require`,
-  // which `pg` honors automatically.
+  console.log(`[db] DATABASE_URL host=${new URL(databaseUrl).hostname} port=${new URL(databaseUrl).port} db=${new URL(databaseUrl).pathname.slice(1)}`);
   pool = new Pool({ connectionString: databaseUrl, max: 10 });
   db = drizzle(pool, { schema });
+} else {
+  console.warn('[db] DATABASE_URL not set');
 }
 
 export { db, schema, pool };
