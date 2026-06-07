@@ -9,7 +9,13 @@ const databaseUrl = process.env.DATABASE_URL;
 let db;
 let pool;
 if (databaseUrl) {
-  console.log(`[db] DATABASE_URL host=${new URL(databaseUrl).hostname} port=${new URL(databaseUrl).port} db=${new URL(databaseUrl).pathname.slice(1)}`);
+  console.log(`[db] DATABASE_URL (first 80 chars)=${databaseUrl.substring(0, 80)} len=${databaseUrl.length}`);
+  try {
+    const u = new URL(databaseUrl);
+    console.log(`[db] parsed: host=${u.hostname} port=${u.port} db=${u.pathname.slice(1)} protocol=${u.protocol}`);
+  } catch (e) {
+    console.error(`[db] URL parse FAILED: ${(e as Error).message}`);
+  }
   pool = new Pool({ connectionString: databaseUrl, max: 10 });
   db = drizzle(pool, { schema });
 } else {
