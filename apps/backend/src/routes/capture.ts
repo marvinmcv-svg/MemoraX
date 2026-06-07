@@ -1,17 +1,11 @@
 import { Router, Request, Response } from 'express';
-import { v5 as uuidv5 } from 'uuid';
 import { memoryStore } from '../lib/store';
 import { knowledgeGraph } from '../lib/knowledge-graph';
 import { aiPipeline } from '../services/ai-pipeline';
+import { getOrCreateChannelUser } from '../lib/channel-users';
 import type { ContentType, ChannelType } from '../types';
 
 const captureRoutes: Router = Router();
-
-const UUID_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
-
-function channelUserIdToUuid(channel: string, channelUserId: string): string {
-  return uuidv5(`${channel}:${channelUserId}`, UUID_NAMESPACE);
-}
 
 captureRoutes.post('/', async (req: Request, res: Response) => {
   try {
@@ -30,7 +24,7 @@ captureRoutes.post('/', async (req: Request, res: Response) => {
 
     let userId: string;
     if (channelVerified) {
-      userId = channelUserIdToUuid(channel, channelUserId);
+      userId = await getOrCreateChannelUser(channel, channelUserId);
     } else if (typeof authedUserId === 'string' && authedUserId.length > 0) {
       userId = authedUserId;
     } else {
