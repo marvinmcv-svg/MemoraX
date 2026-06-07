@@ -1,5 +1,5 @@
 import { eq, and } from '@memorax/db';
-import { schema, requireDb } from '../lib/db';
+import { schema, getDb } from '../lib/db';
 import { v5 as uuidv5 } from 'uuid';
 
 const UUID_NAMESPACE = '6ba7b810-9dad-11d1-80b4-00c04fd430c8';
@@ -12,8 +12,12 @@ export async function getOrCreateChannelUser(
   channel: string,
   channelUserId: string
 ): Promise<string> {
-  const db = requireDb();
   const userId = channelUserIdToUuid(channel, channelUserId);
+  const db = getDb();
+
+  if (!db) {
+    return userId;
+  }
 
   const existing = await db
     .select()

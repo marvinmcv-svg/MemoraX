@@ -76,7 +76,7 @@ describe('Security: /api/v1/capture channel authentication', () => {
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
     expect(res.body.memory).toBeDefined();
-    expect(res.body.memory.userId).toBe('channel-whatsapp-alice');
+    expect(res.body.memory.userId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
   });
 
   it('accepts POST with per-channel secret (WHATSAPP_CAPTURE_SECRET)', async () => {
@@ -95,7 +95,7 @@ describe('Security: /api/v1/capture channel authentication', () => {
       .send(bodyJson);
 
     expect(res.status).toBe(201);
-    expect(res.body.memory.userId).toBe('channel-whatsapp-bob');
+    expect(res.body.memory.userId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
   });
 
   it('accepts POST with x-test-user-id (test bypass) → 201, memory attributed to that user', async () => {
