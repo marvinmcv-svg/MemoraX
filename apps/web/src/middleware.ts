@@ -2,18 +2,16 @@ import { clerkMiddleware } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
 import { isClerkConfigured } from './lib/clerk-config';
 
+const PUBLIC_PATHS = ['/', '/landing', '/features', '/pricing', '/sign-in', '/sign-up'];
+
 const clerk = isClerkConfigured()
-  ? clerkMiddleware({
-      // Public routes that don't require authentication
-      publicRoutes: [
-        '/',
-        '/landing',
-        '/features',
-        '/pricing',
-        '/sign-in',
-        '/sign-up',
-        '/api/v1/health',
-      ],
+  ? clerkMiddleware((auth, request) => {
+      const path = request.nextUrl.pathname;
+      if (PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + '/'))) {
+        return NextResponse.next();
+      }
+      // For all other routes, enforce auth — redirects to sign-in if unauthenticated
+      auth().protect();
     })
   : null;
 
