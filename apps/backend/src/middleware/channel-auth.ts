@@ -105,7 +105,11 @@ export async function channelAuthMiddleware(
   }
 
   const authHeader = req.headers.authorization;
-  if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+  if (
+    typeof authHeader === 'string' &&
+    authHeader.startsWith('Bearer ') &&
+    process.env.CLERK_SECRET_KEY
+  ) {
     await authMiddleware(req, res, next);
     return;
   }

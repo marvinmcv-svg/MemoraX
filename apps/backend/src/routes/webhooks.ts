@@ -25,7 +25,7 @@ webhookRoutes.post('/stripe', async (req: Request, res: Response) => {
     const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
     const stripe = getStripeClient();
     if (!webhookSecret || !stripe) {
-      res.status(503).json({ error: 'Stripe not configured' });
+      res.status(401).json({ error: 'Stripe not configured' });
       return;
     }
 
