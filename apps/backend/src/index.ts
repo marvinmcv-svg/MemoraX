@@ -9,6 +9,11 @@ import { aiRoutes } from './routes/ai';
 import { briefingRoutes } from './routes/briefing';
 import { captureRoutes } from './routes/capture';
 import { webhookRoutes } from './routes/webhooks';
+import { slackRoutes } from './routes/webhooks/slack';
+import { telegramRoutes } from './routes/webhooks/telegram';
+import { twilioRoutes } from './routes/webhooks/twilio';
+import { whatsappRoutes } from './routes/webhooks/whatsapp';
+import { discordRoutes } from './routes/webhooks/discord';
 import { kgRoutes } from './routes/knowledge-graph';
 import { serendipityRoutes } from './routes/serendipity';
 import { authMiddleware } from './middleware/auth';
@@ -52,6 +57,11 @@ app.use(
 app.use(express.urlencoded({ extended: true }));
 
 app.use('/webhooks', webhookRoutes);
+app.use('/webhooks/slack', slackRoutes);
+app.use('/webhooks/telegram', telegramRoutes);
+app.use('/webhooks/twilio', twilioRoutes);
+app.use('/webhooks/whatsapp', whatsappRoutes);
+app.use('/webhooks/discord', discordRoutes);
 
 app.use('/api/v1/capture', channelAuthMiddleware, captureRoutes);
 
