@@ -36,7 +36,7 @@ const toastConfig: Record<ToastType, { icon: typeof CheckCircle; color: string; 
   warning: { icon: AlertTriangle, color: '#F59E0B', bgColor: 'bg-accent-500/10 border-accent-500/20' },
 };
 
-export function ToastProvider({ children }: { children: ReactNode }) {
+export function ToastProvider({ children }: { children: ReactNode | string | number | null | undefined }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
   const addToast = useCallback((type: ToastType, message: string, duration = 4000) => {

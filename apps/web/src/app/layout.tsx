@@ -15,16 +15,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: any }) {
   return (
     <html lang="en">
       <body className="min-h-screen bg-background antialiased">
         <ClerkProvider publishableKey={process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY}>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            {children}
+          </ToastProvider>
         </ClerkProvider>
       </body>
     </html>
