@@ -45,5 +45,5 @@ WORKDIR /app/apps/backend
 
 EXPOSE 3001
 
-# Run migration on startup if DATABASE_URL is set
-CMD ["sh", "-c", "node dist/apps/backend/src/scripts/run-migration.js && node dist/apps/backend/src/index.js"]
+# Run migration on startup if DATABASE_URL is set, then start server
+CMD ["sh", "-c", "node dist/apps/backend/src/scripts/run-migration.js; node dist/apps/backend/src/index.js"]

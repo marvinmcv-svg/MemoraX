@@ -7,7 +7,7 @@ dockerfilePath = "../../Dockerfile.backend"
 NODE_ENV = "production"
 
 [deploy]
-startCommand = "node dist/index.js"
+startCommand = "node dist/apps/backend/src/index.js"
 healthcheckPath = "/health"
 healthcheckTimeout = 60
 restartPolicyType = "ON_FAILURE"

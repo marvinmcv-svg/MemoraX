@@ -4,3 +4,6 @@ dockerfilePath = "Dockerfile.backend"
 
 [build.env]
 NODE_ENV = "production"
+
+[deploy]
+startCommand = "node dist/apps/backend/src/index.js"
