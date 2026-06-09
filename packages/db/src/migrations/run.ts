@@ -138,6 +138,28 @@ async function migrate() {
     );
 
     CREATE INDEX IF NOT EXISTS ai_processing_log_memory_id_idx ON ai_processing_log(memory_id);
+
+    -- Homework (student assignment tracking)
+    CREATE TABLE IF NOT EXISTS homework (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      title TEXT NOT NULL,
+      description TEXT,
+      subject TEXT,
+      due_at TIMESTAMPTZ,
+      status TEXT DEFAULT 'pending' NOT NULL CHECK (status IN ('pending', 'in_progress', 'completed', 'overdue')),
+      priority TEXT DEFAULT 'medium' NOT NULL CHECK (priority IN ('low', 'medium', 'high')),
+      source TEXT DEFAULT 'manual' NOT NULL CHECK (source IN ('manual', 'whatsapp', 'classroom', 'telegram', 'slack')),
+      course_id TEXT,
+      classroom_assignment_id TEXT,
+      metadata JSONB DEFAULT '{}' NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+      updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS homework_user_id_idx ON homework(user_id);
+    CREATE INDEX IF NOT EXISTS homework_due_at_idx ON homework(due_at);
+    CREATE INDEX IF NOT EXISTS homework_status_idx ON homework(status);
   `);
 
   console.log('Migrations completed successfully!');

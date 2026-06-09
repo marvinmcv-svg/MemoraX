@@ -106,6 +106,23 @@ export const briefings = pgTable('briefings', {
   remindersCount: integer('reminders_count').default(0).notNull(),
 });
 
+export const homework = pgTable('homework', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull(),
+  title: text('title').notNull(),
+  description: text('description'),
+  subject: text('subject'),
+  dueAt: timestamp('due_at', { withTimezone: true }),
+  status: text('status').default('pending').notNull(), // pending | in_progress | completed | overdue
+  priority: text('priority').default('medium').notNull(), // low | medium | high
+  source: text('source').default('manual').notNull(), // manual | whatsapp | classroom | telegram
+  courseId: text('course_id'), // Google Classroom course ID
+  classroomAssignmentId: text('classroom_assignment_id'), // Google Classroom assignment ID
+  metadata: jsonb('metadata').default({}).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Memory = typeof memories.$inferSelect;
@@ -120,3 +137,5 @@ export type Workspace = typeof workspaces.$inferSelect;
 export type WorkspaceMemory = typeof workspaceMemories.$inferSelect;
 export type Briefing = typeof briefings.$inferSelect;
 export type UserChannel = typeof userChannels.$inferSelect;
+export type Homework = typeof homework.$inferSelect;
+export type NewHomework = typeof homework.$inferInsert;

@@ -1,12 +1,18 @@
 export type ChannelType = 'whatsapp' | 'telegram' | 'slack' | 'sms' | 'email' | 'app';
 
-export type IntentType = 'reminder' | 'note' | 'task' | 'event' | 'serendipity' | 'question' | 'unknown';
+export type IntentType = 'reminder' | 'note' | 'task' | 'event' | 'serendipity' | 'question' | 'homework' | 'unknown';
 
 export type ContentType = 'text' | 'voice' | 'image' | 'link';
 
 export type PlanType = 'free' | 'pro' | 'team';
 
 export type ReminderStatus = 'pending' | 'sent' | 'snoozed' | 'cancelled';
+
+export type HomeworkStatus = 'pending' | 'in_progress' | 'completed' | 'overdue';
+
+export type HomeworkPriority = 'low' | 'medium' | 'high';
+
+export type HomeworkSource = 'manual' | 'whatsapp' | 'classroom' | 'telegram' | 'slack';
 
 export type TeamRole = 'owner' | 'admin' | 'member';
 
@@ -106,6 +112,23 @@ export interface Briefing {
   remindersCount: number;
 }
 
+export interface Homework {
+  id: string;
+  userId: string;
+  title: string;
+  description: string | null;
+  subject: string | null;
+  dueAt: Date | null;
+  status: HomeworkStatus;
+  priority: HomeworkPriority;
+  source: HomeworkSource;
+  courseId: string | null;
+  classroomAssignmentId: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface AIMessage {
   id: string;
   memoryId: string;
@@ -150,6 +173,7 @@ export const INTENT_COLORS: Record<IntentType, string> = {
   event: '#EC4899',
   serendipity: '#8B5CF6',
   question: '#3B82F6',
+  homework: '#F97316',
   unknown: '#64748B'
 };
 

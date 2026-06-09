@@ -44,4 +44,6 @@ COPY --from=builder /app/apps/backend/package.json /app/apps/backend/package.jso
 WORKDIR /app/apps/backend
 
 EXPOSE 3001
-CMD ["node", "dist/apps/backend/src/index.js"]
+
+# Run migration on startup if DATABASE_URL is set
+CMD ["sh", "-c", "node dist/apps/backend/src/scripts/run-migration.js && node dist/apps/backend/src/index.js"]

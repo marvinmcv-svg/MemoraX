@@ -16,10 +16,33 @@ jobs:
       - name: Railway Login
         run: railway login --token ${{ secrets.RAILWAY_TOKEN }}
 
-      - name: Deploy
+      - name: Deploy Backend
         run: |
-          railway up --service ${{ vars.RAILWAY_SERVICE_ID }}
-          railway variable set MINIMAX_API_KEY=${{ secrets.MINIMAX_API_KEY }}
+          railway up --project ${{ vars.RAILWAY_PROJECT_ID }} --filename railway.toml
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: Set Backend Environment Variables
+        run: |
+          railway variables set --service ${{ vars.RAILWAY_BACKEND_SERVICE_ID }} \
+            DATABASE_URL="${{ secrets.DATABASE_URL }}" \
+            GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
+            OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            WHATSAPP_ACCESS_TOKEN="${{ secrets.WHATSAPP_ACCESS_TOKEN }}" \
+            WHATSAPP_PHONE_NUMBER_ID="${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}" \
+            WHATSAPP_APP_SECRET="${{ secrets.WHATSAPP_APP_SECRET }}" \
+            WHATSAPP_VERIFY_TOKEN="${{ secrets.WHATSAPP_VERIFY_TOKEN }}" \
+            STRIPE_SECRET_KEY="${{ secrets.STRIPE_SECRET_KEY }}" \
+            STRIPE_WEBHOOK_SECRET="${{ secrets.STRIPE_WEBHOOK_SECRET }}" \
+            SLACK_BOT_TOKEN="${{ secrets.SLACK_BOT_TOKEN }}" \
+            SLACK_CLIENT_ID="${{ secrets.SLACK_CLIENT_ID }}" \
+            SLACK_CLIENT_SECRET="${{ secrets.SLACK_CLIENT_SECRET }}" \
+            TELEGRAM_BOT_TOKEN="${{ secrets.TELEGRAM_BOT_TOKEN }}" \
+            DISCORD_BOT_TOKEN="${{ secrets.DISCORD_BOT_TOKEN }}" \
+            CLAUDE_API_KEY="${{ secrets.CLAUDE_API_KEY }}" \
+            BACKEND_URL="${{ vars.BACKEND_URL }}"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       - name: Health Check
-        run: sleep 30 && curl -f https://memorax-backend.up.railway.app/health || exit 1
+        run: sleep 40 && curl -f https://backend-production-c00c.up.railway.app/health || exit 1

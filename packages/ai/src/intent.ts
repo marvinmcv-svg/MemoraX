@@ -20,7 +20,8 @@ const INTENT_CLASSIFIER_PROMPT = `You are an intent classifier for MemoraX, an A
 - task: User has a task or action item to track
 - event: User is capturing an event or appointment
 - serendipity: User is sharing something interesting/worth revisiting
-- question: User is asking a question
+- question: User is asking a question or wants help understanding something
+- homework: User is capturing a homework assignment or assignment details (due date, subject, course, task description)
 - unknown: Cannot determine intent
 
 Return ONLY a JSON object with this structure:
@@ -32,6 +33,12 @@ Output: {"intent": "reminder", "confidence": 0.95, "reasoning": "User explicitly
 
 Input: "The sunset was beautiful today"
 Output: {"intent": "serendipity", "confidence": 0.88, "reasoning": "User is sharing a moment worth remembering"}
+
+Input: "Math homework chapter 5 exercises 1-10 due Friday"
+Output: {"intent": "homework", "confidence": 0.93, "reasoning": "User is capturing a homework assignment with subject and due date"}
+
+Input: "What's the capital of France?"
+Output: {"intent": "question", "confidence": 0.97, "reasoning": "User is asking a factual question"}
 
 Now classify this message:
 `;

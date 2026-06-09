@@ -71,6 +71,26 @@ export interface Briefing {
   remindersCount: number;
 }
 
+export type HomeworkStatus = 'pending' | 'in_progress' | 'completed' | 'overdue';
+export type HomeworkPriority = 'low' | 'medium' | 'high';
+
+export interface Homework {
+  id: string;
+  userId: string;
+  title: string;
+  description: string | null;
+  subject: string | null;
+  dueAt: string | null;
+  status: HomeworkStatus;
+  priority: HomeworkPriority;
+  source: string;
+  courseId: string | null;
+  classroomAssignmentId: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const api = {
   memories: {
     list: () =>
@@ -157,5 +177,26 @@ export const api = {
       apiRequest<{ id: string; name: string; key: string; permissions: string[]; createdAt: string; lastUsed: string | null }>('/api/v1/api-keys', { method: 'POST', body: data }),
     revoke: (id: string) =>
       apiRequest<{ success: boolean }>(`/api/v1/api-keys/${id}`, { method: 'DELETE' }),
+  },
+
+  homework: {
+    list: () => apiRequest<{ data: Homework[]; total: number }>('/api/v1/homework'),
+    get: (id: string) => apiRequest<{ homework: Homework }>(`/api/v1/homework/${id}`),
+    create: (data: {
+      title: string;
+      description?: string | null;
+      subject?: string | null;
+      dueAt?: string | null;
+      status?: HomeworkStatus;
+      priority?: HomeworkPriority;
+      source?: string;
+    }) => apiRequest<{ homework: Homework }>('/api/v1/homework', { method: 'POST', body: data }),
+    update: (id: string, data: Partial<Homework>) =>
+      apiRequest<{ homework: Homework }>(`/api/v1/homework/${id}`, { method: 'PUT', body: data }),
+    updateStatus: (id: string, status: HomeworkStatus) =>
+      apiRequest<{ homework: Homework }>(`/api/v1/homework/${id}/status`, { method: 'PATCH', body: { status } }),
+    delete: (id: string) =>
+      apiRequest<{ success: boolean }>(`/api/v1/homework/${id}`, { method: 'DELETE' }),
+    pending: () => apiRequest<{ data: Homework[]; total: number }>('/api/v1/homework/pending'),
   },
 };

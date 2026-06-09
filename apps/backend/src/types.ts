@@ -1,7 +1,10 @@
 export type ChannelType = 'whatsapp' | 'telegram' | 'slack' | 'sms' | 'email' | 'app';
-export type IntentType = 'reminder' | 'note' | 'task' | 'event' | 'serendipity' | 'question' | 'unknown';
+export type IntentType = 'reminder' | 'note' | 'task' | 'event' | 'serendipity' | 'question' | 'homework' | 'unknown';
 export type ContentType = 'text' | 'voice' | 'image' | 'link';
 export type ReminderStatus = 'pending' | 'sent' | 'snoozed' | 'cancelled';
+export type HomeworkStatus = 'pending' | 'in_progress' | 'completed' | 'overdue';
+export type HomeworkPriority = 'low' | 'medium' | 'high';
+export type HomeworkSource = 'manual' | 'whatsapp' | 'classroom' | 'telegram' | 'slack';
 
 export interface Memory {
   id: string;
@@ -63,4 +66,21 @@ export interface ApiKey {
   permissions: string[];
   lastUsed: Date | null;
   createdAt: Date;
+}
+
+export interface Homework {
+  id: string;
+  userId: string;
+  title: string;
+  description: string | null;
+  subject: string | null;
+  dueAt: Date | null;
+  status: HomeworkStatus;
+  priority: HomeworkPriority;
+  source: HomeworkSource;
+  courseId: string | null;
+  classroomAssignmentId: string | null;
+  metadata: Record<string, unknown>;
+  createdAt: Date;
+  updatedAt: Date;
 }

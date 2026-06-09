@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { sendWhatsAppTextMessage, sendTutorResponse, sendHomeworkConfirmation } from '../../services/whatsapp-sender';
 
 const whatsappRoutes: Router = Router();
 
@@ -32,6 +33,15 @@ async function verifyWhatsAppSignature(
 function redactPII(phone: string): string {
   if (!phone || phone.length < 4) return '***';
   return phone.slice(0, 4) + '****' + phone.slice(-2);
+}
+
+/**
+ * Format a date for display in WhatsApp messages.
+ */
+function formatDateForWhatsApp(dateStr: string | null): string {
+  if (!dateStr) return 'No due date';
+  const date = new Date(dateStr);
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 }
 
 /**
@@ -147,8 +157,47 @@ whatsappRoutes.post('/', async (req: Request, res: Response) => {
               metadata: { messageId, phoneNumberId, timestamp: message.timestamp },
             }),
           });
-          if (captureRes.ok) processedCount++;
-          else console.error(`[whatsapp] capture failed: ${captureRes.status}`);
+
+          if (captureRes.ok) {
+            processedCount++;
+            const captureData = await captureRes.json() as {
+              intent: string;
+              memory?: { content: string };
+              homework?: { title: string; dueAt: string | null };
+            };
+
+            // Handle AI responses based on intent
+            const intent = captureData.intent;
+            if (intent === 'question' && captureData.memory) {
+              // Generate and send tutor response
+              const { generateTutorResponse } = await import('../../services/ai-tutor');
+              const tutorResponse = await generateTutorResponse(
+                captureData.memory.content,
+                undefined
+              );
+              if (tutorResponse.answer) {
+                await sendTutorResponse(from, tutorResponse.answer, phoneNumberId);
+              }
+            } else if (intent === 'homework' && captureData.homework) {
+              // Send homework confirmation
+              const hw = captureData.homework;
+              await sendHomeworkConfirmation(
+                from,
+                hw.title,
+                hw.dueAt ? formatDateForWhatsApp(hw.dueAt) : null,
+                phoneNumberId
+              );
+            } else if (intent === 'question' || intent === 'homework') {
+              // Intent detected but no full AI response (maybe AI not configured)
+              // Send a simple acknowledgment
+              const ackMessage = intent === 'question'
+                ? "Got your question! I'm here to help. Our AI tutor is setting up — check your dashboard for full responses, or try again in a moment. 📚"
+                : "Homework captured! 📝 Check your dashboard to see all your assignments and due dates.";
+              await sendWhatsAppTextMessage({ to: from, body: ackMessage, phoneNumberId });
+            }
+          } else {
+            console.error(`[whatsapp] capture failed: ${captureRes.status}`);
+          }
         } catch (err) {
           console.error(`[whatsapp] capture error for ${messageId}:`, err);
         }

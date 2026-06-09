@@ -2,7 +2,8 @@ import { v4 as uuid } from 'uuid';
 import { randomBytes } from 'crypto';
 import { getDb } from './db';
 import { memoryRepository } from '../repositories/memories';
-import type { Memory, Reminder, UserChannel, Workspace, Briefing, ApiKey } from '../types';
+import { homeworkRepository } from '../repositories/homework';
+import type { Memory, Reminder, UserChannel, Workspace, Briefing, ApiKey, Homework } from '../types';
 
 const useDb = !!getDb();
 
@@ -18,6 +19,7 @@ const channels: UserChannel[] = [];
 const workspaces: Workspace[] = [];
 const briefings: Briefing[] = [];
 const apiKeys: ApiKey[] = [];
+const homework: Homework[] = [];
 
 export const __resetStoreForTesting = (): void => {
   memories.length = 0;
@@ -259,5 +261,64 @@ export const apiKeyStore = {
       return true;
     }
     return false;
+  },
+};
+
+export const homeworkStore = {
+  async create(data: Omit<Homework, 'id' | 'createdAt' | 'updatedAt'>): Promise<Homework> {
+    if (useDb) return homeworkRepository.create(data);
+    const hw: Homework = {
+      ...data,
+      id: uuid(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    homework.push(hw);
+    return hw;
+  },
+
+  async findByUser(userId: string): Promise<Homework[]> {
+    if (useDb) return homeworkRepository.findByUser(userId);
+    return homework
+      .filter(h => h.userId === userId)
+      .sort((a, b) => {
+        const aDate = a.dueAt?.getTime() ?? 0;
+        const bDate = b.dueAt?.getTime() ?? 0;
+        return bDate - aDate;
+      });
+  },
+
+  async findById(id: string, userId: string): Promise<Homework | undefined> {
+    if (useDb) return homeworkRepository.findById(id, userId) ?? undefined;
+    return homework.find(h => h.id === id && h.userId === userId);
+  },
+
+  async update(id: string, userId: string, data: Partial<Homework>): Promise<Homework | undefined> {
+    if (useDb) return homeworkRepository.update(id, userId, data) ?? undefined;
+    const hw = homework.find(h => h.id === id && h.userId === userId);
+    if (!hw) return undefined;
+    Object.assign(hw, data, { updatedAt: new Date() });
+    return hw;
+  },
+
+  async delete(id: string, userId: string): Promise<boolean> {
+    if (useDb) return homeworkRepository.delete(id, userId);
+    const index = homework.findIndex(h => h.id === id && h.userId === userId);
+    if (index > -1) {
+      homework.splice(index, 1);
+      return true;
+    }
+    return false;
+  },
+
+  async findPending(userId: string): Promise<Homework[]> {
+    if (useDb) return homeworkRepository.findPending(userId);
+    return homework
+      .filter(h => h.userId === userId && (h.status === 'pending' || h.status === 'in_progress'))
+      .sort((a, b) => {
+        const aDate = a.dueAt?.getTime() ?? 0;
+        const bDate = b.dueAt?.getTime() ?? 0;
+        return aDate - bDate;
+      });
   },
 };

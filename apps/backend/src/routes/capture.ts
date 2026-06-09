@@ -1,9 +1,10 @@
 import { Router, Request, Response } from 'express';
-import { memoryStore } from '../lib/store';
+import { memoryStore, homeworkStore } from '../lib/store';
 import { knowledgeGraph } from '../lib/knowledge-graph';
 import { aiPipeline } from '../services/ai-pipeline';
 import { getOrCreateChannelUser } from '../lib/channel-users';
 import type { ContentType, ChannelType } from '../types';
+import type { HomeworkSource } from '@memorax/shared';
 
 const captureRoutes: Router = Router();
 
@@ -58,6 +59,40 @@ captureRoutes.post('/', async (req: Request, res: Response) => {
       knowledgeGraph.addMemoryToGraph(updated?.id ?? memory.id, aiResult.entities);
     }
 
+    // If intent is 'homework', create a homework entry
+    let homeworkEntry = null;
+    if (aiResult.intent === 'homework') {
+      const entities = aiResult.entities;
+      const titleEntity = entities.find(e => e.type === 'TOPIC' || e.type === 'SUBJECT')?.value;
+      const dateEntity = entities.find(e => e.type === 'DATE')?.value;
+
+      let dueAt: Date | null = null;
+      if (dateEntity) {
+        try {
+          dueAt = new Date(dateEntity);
+          if (isNaN(dueAt.getTime())) dueAt = null;
+        } catch {
+          dueAt = null;
+        }
+      }
+
+      const subjectEntity = entities.find(e => e.type === 'SUBJECT')?.value ?? null;
+
+      homeworkEntry = await homeworkStore.create({
+        userId,
+        title: titleEntity ?? content.slice(0, 100),
+        description: content,
+        subject: subjectEntity,
+        dueAt,
+        status: 'pending',
+        priority: 'medium',
+        source: (channel as HomeworkSource) ?? 'whatsapp',
+        courseId: null,
+        classroomAssignmentId: null,
+        metadata: { memoryId: memory.id, capturedVia: channel },
+      });
+    }
+
     return res.status(201).json({
       success: true,
       memory: updated ?? memory,
@@ -65,6 +100,7 @@ captureRoutes.post('/', async (req: Request, res: Response) => {
       entities: aiResult.entities,
       processingTime: aiResult.processingTime,
       aiStages: aiResult.stages,
+      homework: homeworkEntry,
     });
   } catch (error) {
     console.error('Error capturing message:', error);
