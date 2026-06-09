@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { SignIn } from '@clerk/nextjs';
 import { isClerkConfigured } from '@/lib/clerk-config';
 import { Button } from '@/components/ui/Button';
 import { Brain } from 'lucide-react';
