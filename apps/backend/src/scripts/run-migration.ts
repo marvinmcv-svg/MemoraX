@@ -2,10 +2,18 @@
  * Run migrations against the production database.
  * Usage: node dist/apps/backend/src/scripts/run-migration.js
  * Requires DATABASE_URL environment variable.
+ * Gracefully exits if DATABASE_URL is not set.
  */
 import { neon } from '@neondatabase/serverless';
 
-const sql = neon(process.env.DATABASE_URL!);
+const DATABASE_URL = process.env.DATABASE_URL;
+
+if (!DATABASE_URL) {
+  console.log('[migration] DATABASE_URL not set — skipping migration');
+  process.exit(0);
+}
+
+const sql = neon(DATABASE_URL);
 
 async function runMigration() {
   console.log('[migration] Starting...');
@@ -37,7 +45,8 @@ async function runMigration() {
     console.log('[migration] homework table created/verified successfully');
   } catch (error) {
     console.error('[migration] Failed:', error);
-    throw error;
+    // Don't exit with error — server should still start
+    console.log('[migration] Proceeding without migration...');
   }
 }
 
@@ -47,5 +56,5 @@ runMigration()
     process.exit(0);
   })
   .catch(() => {
-    process.exit(1);
+    process.exit(0);
   });
