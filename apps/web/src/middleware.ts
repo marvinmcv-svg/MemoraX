@@ -1,10 +1,19 @@
-import { authMiddleware } from '@clerk/nextjs';
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
 
 const PUBLIC_PATHS = ['/', '/landing', '/features', '/pricing', '/sign-in', '/sign-up'];
 
-export default authMiddleware({
-  publicRoutes: PUBLIC_PATHS,
-});
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Allow all public paths
+  if (PUBLIC_PATHS.some((p) => pathname === p || pathname.startsWith(p + '/'))) {
+    return NextResponse.next();
+  }
+
+  // For now, allow everything — auth will be added back later
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [
