@@ -199,4 +199,29 @@ export const api = {
       apiRequest<{ success: boolean }>(`/api/v1/homework/${id}`, { method: 'DELETE' }),
     pending: () => apiRequest<{ data: Homework[]; total: number }>('/api/v1/homework/pending'),
   },
+
+  family: {
+    generateCode: () =>
+      apiRequest<{ linkCode: string; expiresAt: string; instructions: string }>('/api/v1/family/generate-code', { method: 'POST' }),
+    acceptCode: (code: string) =>
+      apiRequest<{ success: boolean; link: { id: string; parentId: string; parentName: string; parentEmail: string | null; status: string; createdAt: string } }>(
+        '/api/v1/family/accept-code', { method: 'POST', body: { code } }
+      ),
+    status: () =>
+      apiRequest<{ role: 'parent' | 'child' | null; link: { id: string; parentId?: string; childId?: string; parentName?: string; childName?: string; parentEmail?: string | null; childEmail?: string | null; status: string; linkedAt: string } | null }>(
+        '/api/v1/family/status'
+      ),
+    unlink: () =>
+      apiRequest<{ success: boolean; message: string }>('/api/v1/family/unlink', { method: 'DELETE' }),
+    childHomework: () =>
+      apiRequest<{
+        child: { id: string; name: string; email: string | null };
+        homework: Homework[];
+        total: number;
+      }>('/api/v1/family/child-homework'),
+    pendingCodes: () =>
+      apiRequest<{ codes: { id: string; linkCode: string | null; codeExpiresAt: string | null; status: string }[] }>(
+        '/api/v1/family/pending-codes'
+      ),
+  },
 };

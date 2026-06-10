@@ -134,6 +134,17 @@ export const googleOAuthTokens = pgTable('google_oauth_tokens', {
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+export const familyGroups = pgTable('family_groups', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  parentId: uuid('parent_id').notNull(),
+  childId: uuid('child_id').notNull(),
+  linkCode: text('link_code'),
+  codeExpiresAt: timestamp('code_expires_at', { withTimezone: true }),
+  status: text('status').default('active').notNull(), // pending | active | unlinked
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
 export type Memory = typeof memories.$inferSelect;
@@ -152,3 +163,5 @@ export type Homework = typeof homework.$inferSelect;
 export type NewHomework = typeof homework.$inferInsert;
 export type GoogleOAuthToken = typeof googleOAuthTokens.$inferSelect;
 export type NewGoogleOAuthToken = typeof googleOAuthTokens.$inferInsert;
+export type FamilyGroup = typeof familyGroups.$inferSelect;
+export type NewFamilyGroup = typeof familyGroups.$inferInsert;

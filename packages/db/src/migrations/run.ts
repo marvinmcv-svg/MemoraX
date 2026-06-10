@@ -175,6 +175,24 @@ async function migrate() {
     );
 
     CREATE INDEX IF NOT EXISTS google_oauth_tokens_user_id_idx ON google_oauth_tokens(user_id);
+
+    -- Family groups (parent-child linking)
+    CREATE TABLE IF NOT EXISTS family_groups (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      parent_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      child_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      link_code TEXT,
+      code_expires_at TIMESTAMPTZ,
+      status TEXT DEFAULT 'active' NOT NULL CHECK (status IN ('pending', 'active', 'unlinked')),
+      created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+      updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+      UNIQUE(parent_id, child_id),
+      UNIQUE(link_code)
+    );
+
+    CREATE INDEX IF NOT EXISTS family_groups_parent_id_idx ON family_groups(parent_id);
+    CREATE INDEX IF NOT EXISTS family_groups_child_id_idx ON family_groups(child_id);
+    CREATE INDEX IF NOT EXISTS family_groups_link_code_idx ON family_groups(link_code);
   `);
 
   console.log('Migrations completed successfully!');

@@ -19,6 +19,7 @@ import { serendipityRoutes } from './routes/serendipity';
 import { homeworkRoutes } from './routes/homework';
 import { googleAuthRoutes } from './routes/google-auth';
 import { classroomRoutes } from './routes/classroom';
+import { familyRoutes } from './routes/family';
 import { authMiddleware } from './middleware/auth';
 import { channelAuthMiddleware } from './middleware/channel-auth';
 import { knowledgeGraph } from './lib/knowledge-graph';
@@ -81,6 +82,7 @@ app.use('/api/v1/serendipity', auth, serendipityRoutes);
 app.use('/api/v1/homework', auth, homeworkRoutes);
 app.use('/api/v1/auth/google', auth, googleAuthRoutes);
 app.use('/api/v1/classroom', auth, classroomRoutes);
+app.use('/api/v1/family', auth, familyRoutes);
 
 app.get('/health', (req, res) => {
   const dbConnected = !!process.env.DATABASE_URL;

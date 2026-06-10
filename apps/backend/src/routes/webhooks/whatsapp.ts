@@ -1,5 +1,8 @@
 import { Router, Request, Response } from 'express';
 import { sendWhatsAppTextMessage, sendTutorResponse, sendHomeworkConfirmation } from '../../services/whatsapp-sender';
+import { getOrCreateChannelUser } from '../../lib/channel-users';
+import { schema, requireDb } from '../../lib/db';
+import { eq, and } from '@memorax/db';
 
 const whatsappRoutes: Router = Router();
 
@@ -142,6 +145,87 @@ whatsappRoutes.post('/', async (req: Request, res: Response) => {
         if (seenMessages.size > 10000) seenMessages.clear();
 
         console.log(`[whatsapp] msg=${messageId} from=${redactPII(from)} len=${content?.length ?? 0}`);
+
+        // Handle family link commands
+        const trimmed = (content || '').trim().toLowerCase();
+        const acceptMatch = trimmed.match(/^accept\s+([a-zA-Z0-9]{8})$/);
+
+        if (acceptMatch || trimmed === 'my code' || trimmed === 'link' || trimmed === 'family link') {
+          const userId = await getOrCreateChannelUser('whatsapp', from);
+
+          if (acceptMatch) {
+            // Accept a family link code
+            const code = acceptMatch[1].toUpperCase();
+            try {
+              const db = requireDb();
+              const links = await db
+                .select()
+                .from(schema.familyGroups)
+                .where(and(
+                  eq(schema.familyGroups.linkCode, code),
+                  eq(schema.familyGroups.status, 'pending')
+                ))
+                .limit(1);
+
+              if (links.length === 0) {
+                await sendWhatsAppTextMessage({ to: from, body: "That code doesn't work. Ask your parent to generate a new one from Settings → Family.", phoneNumberId });
+              } else if (links[0].codeExpiresAt && new Date(links[0].codeExpiresAt) < new Date()) {
+                await sendWhatsAppTextMessage({ to: from, body: "That code has expired. Ask your parent to generate a new one from Settings → Family.", phoneNumberId });
+              } else {
+                const [updated] = await db
+                  .update(schema.familyGroups)
+                  .set({
+                    childId: userId,
+                    status: 'active',
+                    linkCode: null,
+                    codeExpiresAt: null,
+                    updatedAt: new Date(),
+                  })
+                  .where(eq(schema.familyGroups.id, links[0].id))
+                  .returning();
+
+                const parentRows = await db.select({ name: schema.users.name }).from(schema.users).where(eq(schema.users.id, links[0].parentId)).limit(1);
+                const parentName = parentRows[0]?.name ?? 'Your parent';
+                await sendWhatsAppTextMessage({ to: from, body: `✅ You're now linked with ${parentName}! They'll be able to see your upcoming assignments.`, phoneNumberId });
+              }
+            } catch (err) {
+              console.error('[whatsapp] accept code error:', err);
+              await sendWhatsAppTextMessage({ to: from, body: "Something went wrong. Try again or ask your parent to generate a new code.", phoneNumberId });
+            }
+            continue;
+          } else if (trimmed === 'my code') {
+            // Check if user has a pending link code
+            try {
+              const db = requireDb();
+              const pendingLinks = await db
+                .select({ linkCode: schema.familyGroups.linkCode, codeExpiresAt: schema.familyGroups.codeExpiresAt })
+                .from(schema.familyGroups)
+                .where(and(
+                  eq(schema.familyGroups.childId, userId),
+                  eq(schema.familyGroups.status, 'pending')
+                ))
+                .limit(1);
+
+              if (pendingLinks.length > 0 && pendingLinks[0].linkCode && pendingLinks[0].codeExpiresAt && new Date(pendingLinks[0].codeExpiresAt) > new Date()) {
+                await sendWhatsAppTextMessage({ to: from, body: `Your link code is: ${pendingLinks[0].linkCode}\nThis code expires in 24 hours. Use it to link with your parent!`, phoneNumberId });
+              } else {
+                await sendWhatsAppTextMessage({ to: from, body: "You don't have a pending link code. Ask your parent to generate one from Settings → Family.", phoneNumberId });
+              }
+            } catch (err) {
+              console.error('[whatsapp] my code error:', err);
+              await sendWhatsAppTextMessage({ to: from, body: "Something went wrong. Try again.", phoneNumberId });
+            }
+            continue;
+          } else {
+            // "link" or "family link" — explain how to use the feature
+            await sendWhatsAppTextMessage({
+              to: from,
+              body: "📎 Family Link\n\nThere are two ways to link with a parent:\n\n1️⃣ Get a code from your parent (Settings → Family) and send me: accept YOURCODE\n\n2️⃣ If you already have a code, just send: accept ABC12345",
+              phoneNumberId
+            });
+            continue;
+          }
+        }
 
         try {
           const captureRes = await fetch(`${BACKEND_URL}/api/v1/capture`, {

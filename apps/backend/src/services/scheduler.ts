@@ -88,6 +88,80 @@ async function checkHomeworkReminders() {
   }
 }
 
+async function notifyParentsOfUpcomingDeadlines() {
+  const DATABASE_URL = process.env.DATABASE_URL;
+  if (!DATABASE_URL) return;
+
+  try {
+    const { neon } = await import('@neondatabase/serverless');
+    const sql = neon(DATABASE_URL);
+
+    const now = new Date();
+    const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+
+    // Get all parents with active family links
+    const parents = await sql`
+      SELECT fg.parent_id, fg.child_id, u.name as parent_name
+      FROM family_groups fg
+      JOIN users u ON u.id = fg.parent_id
+      WHERE fg.status = 'active'
+    `;
+
+    for (const parent of parents) {
+      try {
+        // Get child's upcoming homework due within 24h
+        const upcomingHomework = await sql`
+          SELECT h.id, h.title, h.subject, h.due_at, h.priority
+          FROM homework h
+          WHERE h.user_id = ${parent.child_id}
+            AND h.status IN ('pending', 'in_progress')
+            AND h.due_at IS NOT NULL
+            AND h.due_at <= ${in24Hours.toISOString()}
+            AND h.due_at > ${now.toISOString()}
+          ORDER BY h.due_at ASC
+          LIMIT 5
+        `;
+
+        if (upcomingHomework.length === 0) continue;
+
+        // Get parent's WhatsApp channel
+        const channels = await sql`
+          SELECT channel_user_id
+          FROM user_channels
+          WHERE user_id = ${parent.parent_id}
+            AND channel = 'whatsapp'
+            AND is_active = true
+          LIMIT 1
+        `;
+
+        if (channels.length === 0) continue;
+
+        const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID || '';
+        const whatsappId = channels[0].channel_user_id;
+
+        const childName = parent.parent_name || 'your child';
+        let body = `👨‍👩‍👧 Family Alert!\n\n${childName} has ${upcomingHomework.length} assignment${upcomingHomework.length !== 1 ? 's' : ''} due soon:\n\n`;
+
+        for (const hw of upcomingHomework) {
+          const dueDate = new Date(hw.due_at!);
+          const hoursUntilDue = Math.round((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60));
+          body += `• "${hw.title}"`;
+          if (hw.subject) body += ` (${hw.subject})`;
+          body += ` — due in ${hoursUntilDue}h\n`;
+        }
+
+        body += '\n💡 Want to help? Reach out to them!';
+        await sendWhatsAppTextMessage({ to: whatsappId, body, phoneNumberId });
+        console.log(`[scheduler] Notified parent ${parent.parent_id} about ${upcomingHomework.length} upcoming deadlines for child ${parent.child_id}`);
+      } catch (err) {
+        console.error(`[scheduler] Parent notification failed for parent ${parent.parent_id}:`, err);
+      }
+    }
+  } catch (error) {
+    console.error('[scheduler] Parent notification check failed:', error);
+  }
+}
+
 async function markOverdueHomework() {
   const DATABASE_URL = process.env.DATABASE_URL;
   if (!DATABASE_URL) return;
@@ -184,6 +258,12 @@ export function startScheduler() {
   cron.schedule('0 */2 * * *', async () => {
     console.log('[scheduler] Running Google Classroom sync...');
     await syncAllClassroomAccounts();
+  });
+
+  // Notify parents of upcoming child deadlines every 4 hours
+  cron.schedule('0 */4 * * *', async () => {
+    console.log('[scheduler] Running parent deadline notifications...');
+    await notifyParentsOfUpcomingDeadlines();
   });
 
   // Daily briefing generation at 7am

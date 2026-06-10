@@ -36,6 +36,7 @@ const mainLinks: SidebarLink[] = [
   { href: '/dashboard/memories', icon: Hash, label: 'Memories' },
   { href: '/dashboard/reminders', icon: Clock, label: 'Reminders' },
   { href: '/dashboard/homework', icon: BookOpen, label: 'Homework' },
+  { href: '/dashboard/family', icon: Users, label: 'Family' },
   { href: '/dashboard/spaces', icon: FolderOpen, label: 'Spaces' },
   { href: '/dashboard/team', icon: Users, label: 'Team' },
   { href: '/dashboard/channels', icon: Mic, label: 'Channels' },
