@@ -17,6 +17,8 @@ import { discordRoutes } from './routes/webhooks/discord';
 import { kgRoutes } from './routes/knowledge-graph';
 import { serendipityRoutes } from './routes/serendipity';
 import { homeworkRoutes } from './routes/homework';
+import { googleAuthRoutes } from './routes/google-auth';
+import { classroomRoutes } from './routes/classroom';
 import { authMiddleware } from './middleware/auth';
 import { channelAuthMiddleware } from './middleware/channel-auth';
 import { knowledgeGraph } from './lib/knowledge-graph';
@@ -77,6 +79,8 @@ app.use('/api/v1/briefing', auth, briefingRoutes);
 app.use('/api/v1/kg', auth, kgRoutes);
 app.use('/api/v1/serendipity', auth, serendipityRoutes);
 app.use('/api/v1/homework', auth, homeworkRoutes);
+app.use('/api/v1/auth/google', auth, googleAuthRoutes);
+app.use('/api/v1/classroom', auth, classroomRoutes);
 
 app.get('/health', (req, res) => {
   const dbConnected = !!process.env.DATABASE_URL;

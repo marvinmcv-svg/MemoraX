@@ -160,6 +160,21 @@ async function migrate() {
     CREATE INDEX IF NOT EXISTS homework_user_id_idx ON homework(user_id);
     CREATE INDEX IF NOT EXISTS homework_due_at_idx ON homework(due_at);
     CREATE INDEX IF NOT EXISTS homework_status_idx ON homework(status);
+
+    -- Google OAuth tokens (for Google Classroom integration)
+    CREATE TABLE IF NOT EXISTS google_oauth_tokens (
+      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+      access_token TEXT NOT NULL,
+      refresh_token TEXT NOT NULL,
+      token_expiry TIMESTAMPTZ NOT NULL,
+      classroom_user_id TEXT,
+      created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+      updated_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+      UNIQUE(user_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS google_oauth_tokens_user_id_idx ON google_oauth_tokens(user_id);
   `);
 
   console.log('Migrations completed successfully!');

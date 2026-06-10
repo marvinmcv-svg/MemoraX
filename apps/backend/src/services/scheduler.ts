@@ -1,6 +1,11 @@
 import cron from 'node-cron';
 import { homeworkStore } from '../lib/store';
 import { sendWhatsAppTextMessage } from './whatsapp-sender';
+import { syncClassroomForUser } from './classroom-sync';
+import { getGoogleTokens, updateGoogleAccessToken } from '../lib/google-tokens';
+import { refreshAccessToken, needsRefresh } from './google-oauth';
+import { eq } from '@memorax/db';
+import { schema, requireDb } from '../lib/db';
 
 interface HomeworkReminderData {
   id: string;
@@ -17,13 +22,9 @@ async function checkHomeworkReminders() {
   }
 
   try {
-    // Get all users with active WhatsApp channels who have pending homework
-    // Note: For a production system, you'd want to query users with WhatsApp connected
-    // and check their pending homework. For now, we check all homework.
     const { neon } = await import('@neondatabase/serverless');
     const sql = neon(DATABASE_URL);
 
-    // Find homework due in the next 24 hours that hasn't been reminded
     const now = new Date();
     const in24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000);
 
@@ -40,7 +41,6 @@ async function checkHomeworkReminders() {
 
     for (const hw of pendingHomework) {
       try {
-        // Get user's WhatsApp channel
         const channels = await sql`
           SELECT channel_user_id
           FROM user_channels
@@ -51,14 +51,12 @@ async function checkHomeworkReminders() {
         `;
 
         if (channels.length === 0) {
-          console.log(`[scheduler] No WhatsApp channel for user ${hw.user_id}, skipping homework ${hw.id}`);
           continue;
         }
 
         const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID || '';
         const whatsappId = channels[0].channel_user_id;
 
-        // Format the reminder message
         const dueDate = new Date(hw.due_at!);
         const hoursUntilDue = Math.round((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60));
 
@@ -73,7 +71,6 @@ async function checkHomeworkReminders() {
 
         await sendWhatsAppTextMessage({ to: whatsappId, body, phoneNumberId });
 
-        // Mark reminder as sent (update metadata)
         const currentMetadata = (hw.metadata as Record<string, unknown>) || {};
         await sql`
           UPDATE homework
@@ -112,6 +109,57 @@ async function markOverdueHomework() {
   }
 }
 
+async function syncAllClassroomAccounts() {
+  const DATABASE_URL = process.env.DATABASE_URL;
+  if (!DATABASE_URL) return;
+
+  try {
+    const { neon } = await import('@neondatabase/serverless');
+    const sql = neon(DATABASE_URL);
+
+    // Get all users with Google tokens
+    const users = await sql`
+      SELECT user_id, access_token, refresh_token, token_expiry
+      FROM google_oauth_tokens
+    `;
+
+    for (const user of users) {
+      try {
+        let accessToken = user.access_token;
+        const refreshToken = user.refresh_token;
+        const tokenExpiry = new Date(user.token_expiry);
+
+        // Refresh token if needed
+        if (needsRefresh(tokenExpiry)) {
+          const refreshed = await refreshAccessToken(refreshToken);
+          accessToken = refreshed.access_token;
+          await updateGoogleAccessToken(user.user_id, refreshed.access_token, new Date(Date.now() + refreshed.expires_in * 1000));
+          console.log(`[scheduler] Refreshed Google token for user ${user.user_id}`);
+        }
+
+        // Sync Classroom data
+        const result = await syncClassroomForUser(
+          user.user_id,
+          accessToken,
+          refreshToken,
+          tokenExpiry
+        );
+
+        if (result.assignmentsCreated > 0 || result.assignmentsUpdated > 0) {
+          console.log(
+            `[scheduler] Classroom sync for user ${user.user_id}: ` +
+            `${result.assignmentsCreated} created, ${result.assignmentsUpdated} updated`
+          );
+        }
+      } catch (err) {
+        console.error(`[scheduler] Classroom sync failed for user ${user.user_id}:`, err);
+      }
+    }
+  } catch (error) {
+    console.error('[scheduler] Classroom sync batch failed:', error);
+  }
+}
+
 export function startScheduler() {
   console.log('Starting MemoraX Scheduler...');
 
@@ -130,6 +178,12 @@ export function startScheduler() {
   cron.schedule('0 * * * *', async () => {
     console.log('[scheduler] Marking overdue homework...');
     await markOverdueHomework();
+  });
+
+  // Sync Google Classroom every 2 hours for all connected users
+  cron.schedule('0 */2 * * *', async () => {
+    console.log('[scheduler] Running Google Classroom sync...');
+    await syncAllClassroomAccounts();
   });
 
   // Daily briefing generation at 7am

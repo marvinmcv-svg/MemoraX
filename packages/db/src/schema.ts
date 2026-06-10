@@ -115,10 +115,21 @@ export const homework = pgTable('homework', {
   dueAt: timestamp('due_at', { withTimezone: true }),
   status: text('status').default('pending').notNull(), // pending | in_progress | completed | overdue
   priority: text('priority').default('medium').notNull(), // low | medium | high
-  source: text('source').default('manual').notNull(), // manual | whatsapp | classroom | telegram
+  source: text('source').default('manual').notNull(), // manual | whatsapp | classroom | telegram | slack
   courseId: text('course_id'), // Google Classroom course ID
   classroomAssignmentId: text('classroom_assignment_id'), // Google Classroom assignment ID
   metadata: jsonb('metadata').default({}).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const googleOAuthTokens = pgTable('google_oauth_tokens', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().unique(),
+  accessToken: text('access_token').notNull(),
+  refreshToken: text('refresh_token').notNull(),
+  tokenExpiry: timestamp('token_expiry', { withTimezone: true }).notNull(),
+  classroomUserId: text('classroom_user_id'), // Google Classroom person ID
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });
@@ -139,3 +150,5 @@ export type Briefing = typeof briefings.$inferSelect;
 export type UserChannel = typeof userChannels.$inferSelect;
 export type Homework = typeof homework.$inferSelect;
 export type NewHomework = typeof homework.$inferInsert;
+export type GoogleOAuthToken = typeof googleOAuthTokens.$inferSelect;
+export type NewGoogleOAuthToken = typeof googleOAuthTokens.$inferInsert;
