@@ -70,7 +70,9 @@ class AIPipelineService {
     const content = config.content.toLowerCase();
 
     let intent: IntentType = 'unknown';
-    if (content.includes('remind') || content.includes('remember to') || content.includes('dont forget')) {
+    if (content.includes('homework') || content.includes('assignment') || content.includes('due ') || content.includes('due:')) {
+      intent = 'homework';
+    } else if (content.includes('remind') || content.includes('remember to') || content.includes('dont forget')) {
       intent = 'reminder';
     } else if (content.includes('task') || content.includes('todo') || content.includes('should') || content.includes('need to')) {
       intent = 'task';

@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { createHmac } from 'crypto';
 import { sendWhatsAppTextMessage, sendTutorResponse, sendHomeworkConfirmation } from '../../services/whatsapp-sender';
 import { getOrCreateChannelUser } from '../../lib/channel-users';
 import { schema, requireDb } from '../../lib/db';
@@ -228,18 +229,33 @@ whatsappRoutes.post('/', async (req: Request, res: Response) => {
         }
 
         try {
+          const capturePayload = {
+            channel: 'whatsapp',
+            channelUserId: from,
+            phoneNumberId,
+            content: content || `[${msgType}]`,
+            contentType,
+            mediaUrl,
+            metadata: { messageId, phoneNumberId, timestamp: message.timestamp },
+          };
+          const captureBody = JSON.stringify(capturePayload);
+
+          // Internal service-to-service auth using channel secret
+          const whatsappCaptureSecret = process.env.WHATSAPP_CAPTURE_SECRET || process.env.CHANNEL_CAPTURE_SECRET || '';
+          const captureSignature = whatsappCaptureSecret
+            ? createHmac('sha256', whatsappCaptureSecret).update(captureBody).digest('hex')
+            : '';
+
+          const captureHeaders: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'X-Channel': 'whatsapp',
+          };
+          if (captureSignature) captureHeaders['X-Channel-Signature'] = captureSignature;
+
           const captureRes = await fetch(`${BACKEND_URL}/api/v1/capture`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              channel: 'whatsapp',
-              channelUserId: from,
-              phoneNumberId,
-              content: content || `[${msgType}]`,
-              contentType,
-              mediaUrl,
-              metadata: { messageId, phoneNumberId, timestamp: message.timestamp },
-            }),
+            headers: captureHeaders,
+            body: captureBody,
           });
 
           if (captureRes.ok) {
